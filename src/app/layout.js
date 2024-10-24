@@ -12,11 +12,16 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>
+    <html lang="es" className={inter.className}>
+      <body className="bg-black text-white min-h-screen flex flex-col">
         <AuthProvider>
           <Navbar />
-          {children}
+          <main className="flex-grow">
+            {children}
+          </main>
+          <footer className="py-4 text-center text-sm text-gray-500">
+            © {new Date().getFullYear()} RunTogether. Todos los derechos reservados.
+          </footer>
         </AuthProvider>
       </body>
     </html>
