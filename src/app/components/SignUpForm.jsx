@@ -28,7 +28,9 @@ export default function SignUpForm() {
     try {
       setLoading(true)
       setError('')
-      const { data, error } = await signUp({ 
+      
+      // 1. Registrar el usuario
+      const { data, error: signUpError } = await signUp({ 
         email, 
         password,
         options: {
@@ -38,21 +40,33 @@ export default function SignUpForm() {
         }
       })
       
-      if (error) throw error
+      if (signUpError) throw signUpError
 
       if (data.user) {
-        // Llamar a la función handle_new_user
-        const { error: profileError } = await supabase.rpc('handle_new_user', {
-          email: data.user.email,
-          user_id: data.user.id
-        })
-        if (profileError) throw profileError
+        try {
+          // 2. Intentar crear el perfil
+          const { error: profileError } = await supabase.rpc('handle_new_user', {
+            email: data.user.email,
+            user_id: data.user.id
+          })
+          
+          if (profileError) {
+            console.error('Error creating profile:', profileError)
+            // Si hay un error con el perfil, pero el usuario se creó, continuamos
+            // ya que el ON CONFLICT manejará duplicados
+          }
 
-        router.push('/create-profile') // Redirige al usuario a la página de creación de perfil
+          // 3. Redirigir al usuario
+          router.push('/profile')
+        } catch (profileError) {
+          console.error('Profile creation error:', profileError)
+          // Incluso si hay un error con el perfil, permitimos continuar
+          router.push('/profile')
+        }
       }
     } catch (error) {
-      console.error('Error:', error)
-      setError(error.error_description || error.message)
+      console.error('SignUp error:', error)
+      setError(error.error_description || error.message || 'Error durante el registro')
     } finally {
       setLoading(false)
     }
