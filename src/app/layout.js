@@ -2,6 +2,7 @@ import './globals.css'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from './contexts/AuthContext'
 import Navbar from './components/Navbar'
+import ClientLayout from './components/ClientLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -13,15 +14,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="es" className={inter.className}>
-      <body className="bg-black text-white min-h-screen flex flex-col">
+      <body className="bg-gradient-to-br from-purple-900/50 to-black text-white min-h-screen flex flex-col">
         <AuthProvider>
-         
-          <main className="flex-grow">
+          <ClientLayout>
             {children}
-          </main>
-          <footer className="py-4 text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} RunTogether. Todos los derechos reservados.
-          </footer>
+          </ClientLayout>
         </AuthProvider>
       </body>
     </html>

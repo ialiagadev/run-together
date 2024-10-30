@@ -6,8 +6,9 @@ import { supabase } from '../lib/supabaseClient'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, Calendar, Loader2 } from 'lucide-react'
+import { MessageCircle, Calendar, Loader2, MapPin, ChevronRight } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { motion } from "framer-motion"
 
 export default function ChatsPage() {
   const { user } = useAuth()
@@ -91,36 +92,40 @@ export default function ChatsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900/50 to-black">
+        <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <div className="text-destructive">{error}</div>
-        <Button onClick={() => window.location.reload()}>
-          Intentar de nuevo
-        </Button>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-purple-900/50 to-black gap-4">
+        <Card className="p-6 text-center bg-black/60 border-white/20 backdrop-blur-md">
+          <CardContent>
+            <div className="text-destructive mb-4">{error}</div>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Intentar de nuevo
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   if (chats.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="text-center p-8">
+      <div className="container mx-auto px-4 py-8 min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900/50 to-black">
+        <Card className="text-center p-8 bg-black/60 border-white/20 backdrop-blur-md w-full max-w-md">
           <CardHeader>
-            <CardTitle>No participas en ningún chat</CardTitle>
+            <CardTitle className="text-2xl mb-2">No participas en ningún chat</CardTitle>
             <div className="text-sm text-muted-foreground">
               Únete a eventos para comenzar a chatear con otros participantes
             </div>
           </CardHeader>
           <CardContent>
             <Link href="/events">
-              <Button>Explorar eventos</Button>
+              <Button className="mt-4 bg-purple-600 hover:bg-purple-700 text-white">Explorar eventos</Button>
             </Link>
           </CardContent>
         </Card>
@@ -129,70 +134,88 @@ export default function ChatsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Mis Chats</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {chats.map((chat) => (
-          <Link key={chat.id} href={`/events/${chat.id}/chat`}>
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="line-clamp-1">{chat.title}</CardTitle>
-                    <div className="text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2 mt-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          {new Date(chat.date).toLocaleDateString('es-ES', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </span>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-4xl font-bold mb-8 text-white text-center">Mis Chats</h1>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {chats.map((chat, index) => (
+            <motion.div
+              key={chat.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <Link href={`/events/${chat.id}/chat`}>
+                <Card className="hover:shadow-lg transition-all duration-300 bg-black/60 border-white/20 backdrop-blur-md overflow-hidden group">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="line-clamp-1 text-lg font-semibold text-purple-300 group-hover:text-purple-200 transition-colors">
+                          {chat.title}
+                        </CardTitle>
+                        <div className="text-sm text-gray-400">
+                          <div className="flex items-center gap-2 mt-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              {new Date(chat.date).toLocaleDateString('es-ES', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <MapPin className="h-4 w-4" />
+                            <span className="line-clamp-1">{chat.location}</span>
+                          </div>
+                        </div>
                       </div>
+                      <MessageCircle className="h-5 w-5 text-purple-400 group-hover:text-purple-300 transition-colors" />
                     </div>
-                  </div>
-                  <MessageCircle className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                {chat.lastMessage ? (
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage 
-                        src={chat.lastMessage.profiles?.avatar_url} 
-                        alt={chat.lastMessage.profiles?.username} 
-                      />
-                      <AvatarFallback>
-                        {chat.lastMessage.profiles?.username?.[0]?.toUpperCase() || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">
-                        {chat.lastMessage.profiles?.username}
+                  </CardHeader>
+                  <CardContent>
+                    {chat.lastMessage ? (
+                      <div className="flex items-start gap-3 bg-purple-900/20 p-3 rounded-md">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage 
+                            src={chat.lastMessage.profiles?.avatar_url} 
+                            alt={chat.lastMessage.profiles?.username} 
+                          />
+                          <AvatarFallback className="bg-purple-700 text-white">
+                            {chat.lastMessage.profiles?.username?.[0]?.toUpperCase() || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-purple-200">
+                            {chat.lastMessage.profiles?.username}
+                          </div>
+                          <div className="text-sm text-gray-400 line-clamp-2">
+                            {chat.lastMessage.message}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {new Date(chat.lastMessage.created_at).toLocaleString('es-ES', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              day: '2-digit',
+                              month: 'short'
+                            })}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground line-clamp-1">
-                        {chat.lastMessage.message}
+                    ) : (
+                      <div className="text-sm text-gray-400 bg-purple-900/20 p-3 rounded-md">
+                        No hay mensajes aún
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {new Date(chat.lastMessage.created_at).toLocaleString('es-ES', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          day: '2-digit',
-                          month: 'short'
-                        })}
-                      </div>
-                    </div>
+                    )}
+                  </CardContent>
+                  <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ChevronRight className="h-5 w-5 text-purple-400" />
                   </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    No hay mensajes aún
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+                </Card>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   )

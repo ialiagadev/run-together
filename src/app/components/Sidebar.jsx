@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button"
 export default function Sidebar() {
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Inicio' },
-    { href: '/events', icon: Calendar, label: 'Eventos' },
     { href: '/profile', icon: User, label: 'Perfil' },
     { href: '/chats', icon: MessageCircle, label: 'Chats' },
+    { href: '/userevents', icon: Calendar, label: 'Mis Eventos' },
+    { href: '/events', icon: Calendar, label: 'Todos los Eventos' },
     { href: '/settings', icon: Settings, label: 'Configuración' },
+
   ]
 
   return (
