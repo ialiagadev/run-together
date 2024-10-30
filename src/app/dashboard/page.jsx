@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/contexts/AuthContext'
 import Sidebar from '../components/Sidebar'
-import { Bell, Search, User, MessageCircle, Moon, Sun, Menu } from 'lucide-react'
+import { Bell, Search, User, MessageCircle, Moon, Sun, Menu, Calendar, MapPin, Route } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -28,6 +30,14 @@ export default function Dashboard() {
     document.body.classList.toggle('dark', darkMode)
     localStorage.setItem('darkMode', darkMode)
   }, [darkMode])
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen)
+  }
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode)
+  }
 
   async function fetchEvents() {
     try {
@@ -65,6 +75,10 @@ export default function Dashboard() {
   }
 
   async function joinEvent(eventId) {
+    if (joinedEvents.some(event => event.id === eventId)) {
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('event_participants')
@@ -86,179 +100,192 @@ export default function Dashboard() {
 
       if (chatError) throw chatError
 
-      alert('Te has unido al evento exitosamente')
       fetchEvents()
       fetchJoinedEvents()
     } catch (error) {
       console.error('Error joining event:', error)
-      alert('Hubo un problema al unirte al evento. Por favor, intenta de nuevo.')
     }
   }
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode)
-  }
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
-  }
-
   return (
-    <div className={`flex flex-col h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
-      <header className={`z-10 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
+    <div className="min-h-screen relative text-white overflow-hidden bg-black">
+      {/* Gradiente base */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black via-black to-purple-900/50" />
+
+      {/* Efecto de ruido */}
+      <div className="fixed inset-0 opacity-50" style={{ 
+        backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E')",
+        mixBlendMode: 'overlay'
+      }} />
+
+      {/* Círculos estáticos */}
+      <div className="fixed inset-0">
+        <div className="absolute rounded-full bg-purple-500/20 w-[400px] h-[400px] left-[10%] top-[20%] transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'blur(80px)' }} />
+        <div className="absolute rounded-full bg-purple-500/10 w-[600px] h-[600px] left-[80%] top-[50%] transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'blur(100px)' }} />
+        <div className="absolute rounded-full bg-purple-500/15 w-[500px] h-[500px] left-[50%] top-[80%] transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'blur(90px)' }} />
+      </div>
+
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-black/60 border-b border-white/10 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <button
                 onClick={toggleSidebar}
-                className="mr-2 md:hidden"
-                aria-label="Toggle menu"
+                className="mr-2 p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white md:hidden"
+                aria-label="Toggle sidebar"
               >
-                <Menu size={24} />
+                <Menu className="h-6 w-6" />
               </button>
-              <h1 className="text-2xl font-semibold">Dashboard</h1>
+              <h1 className="text-2xl font-display">Dashboard</h1>
             </div>
-            <div className="flex items-center">
-              <div className="relative mr-4 hidden sm:block">
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  className={`rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-600 ${
-                    darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'
-                  }`}
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              </div>
-              <button
-                className={`p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-600 ${
-                  darkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-600 hover:text-gray-800'
-                }`}
-                aria-label="Notificaciones"
-              >
-                <Bell size={20} />
-              </button>
-              <button
-                className={`ml-4 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-600 ${
-                  darkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-600 hover:text-gray-800'
-                }`}
-                aria-label="Perfil de usuario"
-              >
-                <User size={20} />
-              </button>
-              <button
-                onClick={toggleDarkMode}
-                className={`ml-4 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-600 ${
-                  darkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-600 hover:text-gray-800'
-                }`}
-                aria-label="Cambiar modo"
-              >
-                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
+            <div className="flex items-center gap-4">
+           
             </div>
           </div>
         </div>
       </header>
-      <div className="flex flex-1 overflow-hidden">
-        <aside className={`${sidebarOpen ? 'block' : 'hidden'} md:block w-64 flex-shrink-0 overflow-y-auto ${darkMode ? 'bg-gray-800' : 'bg-white'} border-r`}>
+
+      <div className="flex relative z-10 pt-16">
+        {/* Sidebar */}
+        <aside className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-black/60 border-r border-white/10 backdrop-blur-xl
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+        `}>
           <Sidebar darkMode={darkMode} />
         </aside>
-        <main className={`flex-1 overflow-y-auto ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Componente de búsqueda por ciudad */}
-              <div className={`md:col-span-3 rounded-lg shadow p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <h2 className="text-xl font-semibold mb-4">Búsqueda de Eventos</h2>
-                <div className="flex items-center">
-                  <input
-                    type="text"
-                    placeholder="Buscar eventos por ciudad..."
-                    className={`flex-1 p-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-purple-600 ${
-                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                  />
-                  <button className="bg-purple-600 text-white px-4 py-2 rounded-r-md hover:bg-purple-700 transition duration-300">
-                    Buscar
-                  </button>
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 transition-all duration-300 ease-in-out md:ml-64">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {/* Search Events */}
+            <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
+              <h2 className="text-xl font-display mb-4">Búsqueda de Eventos</h2>
+              <div className="flex gap-4">
+                <Input
+                  placeholder="Buscar eventos por ciudad..."
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <Button className="bg-purple-500 hover:bg-purple-600">
+                  Buscar
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Upcoming Events */}
+              <div className="lg:col-span-2">
+                <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
+                  <h2 className="text-xl font-display mb-4">Próximos Eventos</h2>
+                  <div className="space-y-4">
+                    {events.map((event) => {
+                      const isParticipant = joinedEvents.some(je => je.id === event.id);
+                      return (
+                        <div 
+                          key={event.id}
+                          className="group p-4 rounded-lg bg-black/40 border border-white/20 backdrop-blur-lg hover:bg-black/50 transition-all shadow-md"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500/40 to-pink-500/40 border border-white/20 flex items-center justify-center shadow-inner">
+                                <Route className="h-6 w-6 text-purple-100" />
+                              </div>
+                              <div>
+                                <h3 className="font-display group-hover:text-purple-300 transition-colors">
+                                  {event.title}
+                                </h3>
+                                <div className="flex items-center gap-2 text-sm text-gray-300">
+                                  <Calendar className="h-4 w-4" />
+                                  {new Date(event.date).toLocaleString('es-ES', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-300">
+                                  <MapPin className="h-4 w-4" />
+                                  {event.location}
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => joinEvent(event.id)}
+                              disabled={isParticipant}
+                              variant={isParticipant ? "secondary" : "default"}
+                              className={`
+                                transition-all
+                                ${isParticipant 
+                                  ? 'bg-purple-700/40 text-white hover:bg-purple-600/50' 
+                                  : 'bg-purple-600/80 hover:bg-purple-700/90 text-white'
+                                }
+                              `}
+                            >
+                              {isParticipant ? 'Ya participas' : 'Unirse'}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* Componente de próximos eventos */}
-              <div className={`md:col-span-2 rounded-lg shadow p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <h2 className="text-xl font-semibold mb-4">Próximos Eventos</h2>
-                <ul className="space-y-4">
-                  {events.map((event) => (
-                    <li key={event.id} className={`border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <h3 className="font-medium">{event.title}</h3>
-                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {new Date(event.date).toLocaleString('es-ES', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })} - {event.location}
-                      </p>
-                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Distancia: {event.distance}</p>
-                      <button 
-                        onClick={() => joinEvent(event.id)}
-                        className="mt-2 bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition duration-300"
-                      >
-                        Unirse al evento
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Componente de acceso rápido */}
-              <div className={`rounded-lg shadow p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <h2 className="text-xl font-semibold mb-4">Acceso Rápido</h2>
-                <div className="space-y-2">
-                  <Link href="/create-event" className="block w-full">
-                    <button className="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition duration-300">
-                      Crear Evento
-                    </button>
-                  </Link>
-                  <button className="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition duration-300">
-                    Mis Eventos
-                  </button>
-                  <button className="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition duration-300">
-                    Explorar Eventos
-                  </button>
+              {/* Quick Access */}
+              <div>
+                <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
+                  <h2 className="text-xl font-display mb-4">Acceso Rápido</h2>
+                  <div className="space-y-3">
+                    <Link href="/create-event" className="block w-full">
+                      <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                        Crear Evento
+                      </Button>
+                    </Link>
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                      Mis Eventos
+                    </Button>
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                      Explorar Eventos
+                    </Button>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Componente de chats */}
-              <div className={`md:col-span-3 rounded-lg shadow p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <h2 className="text-xl font-semibold mb-4">Chats de Eventos</h2>
-                <ul className="space-y-2">
-                  {joinedEvents.map((event) => (
-                    <li key={event.id} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${
-                      darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                    }`}>
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          darkMode ? 'bg-purple-900' : 'bg-purple-200'
-                        }`}>
-                          <MessageCircle className={`${darkMode ? 'text-purple-300' : 'text-purple-600'}`} size={20} />
+            {/* Event Chats */}
+            <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
+              <h2 className="text-xl font-display mb-4">Chats de Eventos</h2>
+              <div className="space-y-4">
+                {joinedEvents.map((event) => (
+                  <div 
+                    key={event.id}
+                    className="group p-4 rounded-lg bg-black/40 border border-white/20 backdrop-blur-lg hover:bg-black/50 transition-all shadow-md"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500/40 to-pink-500/40 border border-white/20 flex items-center justify-center shadow-inner">
+                          <MessageCircle className="h-6 w-6 text-purple-100" />
                         </div>
                         <div>
-                          <p className="font-medium">{event.title}</p>
-                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          <h3 className="font-display group-hover:text-purple-300 transition-colors">
+                            {event.title}
+                          </h3>
+                          <p className="text-sm text-gray-300">
                             {new Date(event.date).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
                       <Link href={`/events/${event.id}/chat`}>
-                        <button 
-                          className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition duration-300"
-                        >
+                        <Button className="bg-purple-700/40 hover:bg-purple-600/50 text-white transition-all">
                           Abrir Chat
-                        </button>
+                        </Button>
                       </Link>
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

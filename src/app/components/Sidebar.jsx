@@ -1,55 +1,60 @@
 import Link from 'next/link'
 import { Home, Calendar, User, MessageCircle, Settings, LogOut, PlusCircle } from 'lucide-react'
+import { Button } from "@/components/ui/button"
 
 export default function Sidebar() {
+  const navItems = [
+    { href: '/dashboard', icon: Home, label: 'Inicio' },
+    { href: '/events', icon: Calendar, label: 'Eventos' },
+    { href: '/profile', icon: User, label: 'Perfil' },
+    { href: '/chats', icon: MessageCircle, label: 'Chats' },
+    { href: '/settings', icon: Settings, label: 'Configuración' },
+  ]
+
   return (
-    <div className="bg-purple-600 text-white h-screen w-64 fixed left-0 top-0 p-4 flex flex-col">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">RunTogether</h1>
+    <div className="flex flex-col h-full">
+      <div className="p-6">
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-200 bg-clip-text text-transparent">
+          RunTogether
+        </h1>
       </div>
-      <nav className="flex-grow">
-        <ul className="space-y-4">
-          <li>
-            <Link href="/dashboard" className="flex items-center space-x-2 hover:bg-purple-700 p-2 rounded-lg transition duration-200">
-              <Home size={24} />
-              <span>Inicio</span>
+
+      <nav className="flex-1 px-3">
+        <div className="space-y-1">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-300 
+                       hover:text-white hover:bg-purple-500/20 transition-colors group"
+            >
+              <div className="p-1 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/30 transition-colors">
+                <item.icon className="h-5 w-5" />
+              </div>
+              <span>{item.label}</span>
             </Link>
-          </li>
-          <li>
-            <Link href="/events" className="flex items-center space-x-2 hover:bg-purple-700 p-2 rounded-lg transition duration-200">
-              <Calendar size={24} />
-              <span>Eventos</span>
-            </Link>
-          </li>
-          <li>
-            <Link href="/profile" className="flex items-center space-x-2 hover:bg-purple-700 p-2 rounded-lg transition duration-200">
-              <User size={24} />
-              <span>Perfil</span>
-            </Link>
-          </li>
-          <li>
-            <Link href="/chats" className="flex items-center space-x-2 hover:bg-purple-700 p-2 rounded-lg transition duration-200">
-              <MessageCircle size={24} />
-              <span>Chats</span>
-            </Link>
-          </li>
-          <li>
-            <Link href="/settings" className="flex items-center space-x-2 hover:bg-purple-700 p-2 rounded-lg transition duration-200">
-              <Settings size={24} />
-              <span>Configuración</span>
-            </Link>
-          </li>
-        </ul>
+          ))}
+        </div>
       </nav>
-      <div className="mt-auto">
-        <Link href="/events/create" className="flex items-center justify-center space-x-2 bg-white text-purple-600 p-2 rounded-lg hover:bg-gray-200 transition duration-200">
-          <PlusCircle size={24} />
-          <span>Crear Evento</span>
+
+      <div className="p-4 mt-auto space-y-4 border-t border-white/10">
+        <Link href="/events/create" className="block">
+          <Button 
+            className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 
+                     hover:to-purple-600 text-white shadow-lg shadow-purple-500/20"
+          >
+            <PlusCircle className="h-5 w-5 mr-2" />
+            Crear Evento
+          </Button>
         </Link>
-        <button className="flex items-center space-x-2 hover:bg-purple-700 p-2 rounded-lg transition duration-200 mt-4 w-full">
-          <LogOut size={24} />
-          <span>Cerrar Sesión</span>
-        </button>
+
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start text-gray-300 hover:text-white hover:bg-purple-500/20"
+        >
+          <LogOut className="h-5 w-5 mr-2" />
+          Cerrar Sesión
+        </Button>
       </div>
     </div>
   )
