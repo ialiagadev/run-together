@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 import { Menu, X } from 'lucide-react'
@@ -9,6 +10,10 @@ import { Button } from "@/components/ui/button"
 export default function ClientLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+  const pathname = usePathname()
+
+  // Rutas donde no queremos mostrar el sidebar ni el navbar
+  const isPublicPage = pathname === '/signin' || pathname === '/signup' || pathname === '/'
 
   useEffect(() => {
     const isDarkMode = localStorage.getItem('darkMode') === 'true'
@@ -26,6 +31,12 @@ export default function ClientLayout({ children }) {
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
+  }
+
+  if (isPublicPage) {
+    return <main className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black">
+      {children}
+    </main>
   }
 
   return (
