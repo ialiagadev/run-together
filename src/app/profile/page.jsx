@@ -18,9 +18,9 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState({
     username: '',
     name: '',
+    age: '',
     bio: '',
-    experience_level: '',
-    preferred_distance: '',
+    running_frequency: '',
     avatar_url: '',
   })
   const [loading, setLoading] = useState(true)
@@ -108,9 +108,9 @@ export default function ProfilePage() {
           id: user.id,
           username: profile.username,
           name: profile.name,
+          age: profile.age,
           bio: profile.bio,
-          experience_level: profile.experience_level,
-          preferred_distance: profile.preferred_distance,
+          running_frequency: profile.running_frequency,
           avatar_url: avatarUrl
         })
 
@@ -118,7 +118,6 @@ export default function ProfilePage() {
       setMessage(isNewUser ? 'Perfil creado con éxito' : 'Perfil actualizado con éxito')
       if (isNewUser) router.push('/dashboard')
       else {
-        // Refresh the profile data
         await fetchProfile()
       }
     } catch (error) {
@@ -138,17 +137,17 @@ export default function ProfilePage() {
   )
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 p-6 bg-gray-800 rounded-lg shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 p-8 bg-black/60 rounded-xl shadow-lg backdrop-blur-sm border border-white/10">
         <h1 className="text-3xl font-bold text-center text-purple-400 mb-6">
           {isNewUser ? 'Crea tu Perfil' : 'Perfil de Usuario'}
         </h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col items-center">
             <div className="relative">
-              <Avatar className="w-32 h-32 mb-4 border-4 border-purple-400">
+              <Avatar className="w-24 h-24 mb-4 border-2 border-purple-400">
                 <AvatarImage src={avatarPreview || profile.avatar_url} alt="Avatar" />
-                <AvatarFallback className="bg-purple-600 text-white text-2xl font-bold">
+                <AvatarFallback className="bg-purple-600 text-white text-xl font-bold">
                   {getInitials(profile.name || user.email)}
                 </AvatarFallback>
               </Avatar>
@@ -182,7 +181,7 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 required
                 placeholder="@usuario"
-                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                className="bg-white/5 border-white/10 text-white placeholder-gray-400"
               />
             </div>
             <div>
@@ -195,8 +194,41 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 required
                 placeholder="Tu nombre completo"
-                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                className="bg-white/5 border-white/10 text-white placeholder-gray-400"
               />
+            </div>
+            <div>
+              <Label htmlFor="age" className="text-white">Edad</Label>
+              <Input
+                type="number"
+                id="age"
+                name="age"
+                value={profile.age}
+                onChange={handleChange}
+                required
+                min="1"
+                max="120"
+                placeholder="Tu edad"
+                className="bg-white/5 border-white/10 text-white placeholder-gray-400"
+              />
+            </div>
+            <div>
+              <Label htmlFor="running_frequency" className="text-white">Frecuencia de carrera</Label>
+              <Select
+                value={profile.running_frequency}
+                onValueChange={(value) => handleChange({ target: { name: 'running_frequency', value } })}
+              >
+                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                  <SelectValue placeholder="¿Cada cuánto sales a correr?" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Diariamente</SelectItem>
+                  <SelectItem value="several_times_week">Varias veces por semana</SelectItem>
+                  <SelectItem value="once_week">Una vez por semana</SelectItem>
+                  <SelectItem value="few_times_month">Algunas veces al mes</SelectItem>
+                  <SelectItem value="occasionally">Ocasionalmente</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="bio" className="text-white">Biografía</Label>
@@ -207,40 +239,10 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 rows={3}
                 placeholder="Cuéntanos sobre ti"
-                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                className="bg-white/5 border-white/10 text-white placeholder-gray-400"
               />
             </div>
-            <div>
-              <Label htmlFor="experience_level" className="text-white">Nivel de Experiencia</Label>
-              <Select
-                value={profile.experience_level}
-                onValueChange={(value) => handleChange({ target: { name: 'experience_level', value } })}
-              >
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Selecciona un nivel" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="principiante">Principiante</SelectItem>
-                  <SelectItem value="intermedio">Intermedio</SelectItem>
-                  <SelectItem value="avanzado">Avanzado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="preferred_distance" className="text-white">Distancia Preferida (km)</Label>
-              <Input
-                type="number"
-                id="preferred_distance"
-                name="preferred_distance"
-                value={profile.preferred_distance}
-                onChange={handleChange}
-                min="0"
-                step="0.1"
-                required
-                placeholder="Distancia en km"
-                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-              />
-            </div>
+          
           </div>
           {error && <div className="text-red-500 text-sm text-center">{error}</div>}
           {message && <div className="text-green-500 text-sm text-center">{message}</div>}

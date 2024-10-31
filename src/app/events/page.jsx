@@ -4,19 +4,20 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import Link from 'next/link'
-import { Calendar, MapPin, Users, Loader2, Search, MessageCircle } from 'lucide-react'
+import { Calendar, MapPin, Users, Loader2, MessageCircle } from 'lucide-react'
 import { motion } from "framer-motion"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import EventSearch from '../components/EventSearch'
 
 export default function EventsPage() {
   const { user } = useAuth()
   const [events, setEvents] = useState([])
+  const [allEvents, setAllEvents] = useState([])
   const [joinedEvents, setJoinedEvents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
   const [message, setMessage] = useState('')
+  const [searchResults, setSearchResults] = useState(null)
 
   useEffect(() => {
     if (user) {
@@ -35,6 +36,7 @@ export default function EventsPage() {
       
       if (error) throw error
       setEvents(data)
+      setAllEvents(data) // Guardamos todos los eventos para la búsqueda
     } catch (error) {
       console.error('Error fetching events:', error)
       setMessage("No se pudieron cargar los eventos. Por favor, intenta de nuevo.")
@@ -75,25 +77,32 @@ export default function EventsPage() {
     }
   }
 
-  const filteredEvents = events.filter(event =>
-    event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const handleSearchResults = (results) => {
+    setSearchResults(results)
+    if (results.length === 0) {
+      setMessage("No se encontraron eventos que coincidan con tu búsqueda.")
+    } else {
+      setMessage("")
+    }
+  }
+
+  const displayEvents = searchResults || events
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-white text-center">Eventos Disponibles</h1>
+        <h1 className="text-4xl font-bold mb-8 text-white text-center">
+          {searchResults ? 'Resultados de búsqueda' : 'Eventos Disponibles'}
+        </h1>
         
-        <div className="mb-8">
-          <Input
-            type="text"
-            placeholder="Buscar eventos por título o ubicación..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white/10 border-white/20 text-white placeholder-gray-400"
-          />
-        </div>
+        <EventSearch 
+          onSearchResults={handleSearchResults} 
+          onReset={() => {
+            setSearchResults(null)
+            setMessage("")
+          }}
+          allEvents={allEvents}
+        />
 
         {message && (
           <div className="mb-4 p-4 bg-purple-600/50 text-white rounded-md">
@@ -105,18 +114,22 @@ export default function EventsPage() {
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
           </div>
-        ) : filteredEvents.length === 0 ? (
+        ) : displayEvents.length === 0 ? (
           <Card className="bg-black/60 border-white/20 backdrop-blur-md">
             <CardContent className="flex flex-col items-center justify-center p-6">
-              <p className="text-white text-lg mb-4">No hay eventos disponibles en este momento.</p>
-              <Button onClick={fetchEvents} variant="outline" className="mt-2">
-                Actualizar eventos
-              </Button>
+              <p className="text-white text-lg mb-4">
+                {searchResults ? 'No se encontraron eventos que coincidan con tu búsqueda.' : 'No hay eventos disponibles en este momento.'}
+              </p>
+              {!searchResults && (
+                <Button onClick={fetchEvents} variant="outline" className="mt-2">
+                  Actualizar eventos
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+            {displayEvents.map((event, index) => (
               <motion.div
                 key={event.id}
                 initial={{ opacity: 0, y: 20 }}

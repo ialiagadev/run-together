@@ -2,26 +2,46 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/contexts/AuthContext'
-import { MessageCircle, Calendar, MapPin, Route } from 'lucide-react'
+import { MessageCircle, Calendar, MapPin, Route, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import EventSearch from '../components/EventSearch'
+
+const MAX_DISPLAY_EVENTS = 3
+const MAX_DISPLAY_CHATS = 3
 
 export default function Dashboard() {
   const { user } = useAuth()
   const [events, setEvents] = useState([])
+  const [allEvents, setAllEvents] = useState([])
   const [joinedEvents, setJoinedEvents] = useState([])
-  const [selectedChat, setSelectedChat] = useState(null)
+  const [searchResults, setSearchResults] = useState(null)
+  const [totalEventCount, setTotalEventCount] = useState(0)
 
   useEffect(() => {
     if (user) {
       fetchEvents()
+      fetchAllEvents()
       fetchJoinedEvents()
     }
   }, [user])
 
   async function fetchEvents() {
+    try {
+      const [{ count }, { data }] = await Promise.all([
+        supabase.from('events').select('id', { count: 'exact', head: true }),
+        supabase.from('events').select('*').order('date', { ascending: true }).limit(MAX_DISPLAY_EVENTS)
+      ])
+      
+      if (data) setEvents(data)
+      setTotalEventCount(count)
+    } catch (error) {
+      console.error('Error fetching events:', error)
+    }
+  }
+
+  async function fetchAllEvents() {
     try {
       const { data, error } = await supabase
         .from('events')
@@ -29,9 +49,9 @@ export default function Dashboard() {
         .order('date', { ascending: true })
       
       if (error) throw error
-      setEvents(data)
+      setAllEvents(data)
     } catch (error) {
-      console.error('Error fetching events:', error)
+      console.error('Error fetching all events:', error)
     }
   }
 
@@ -48,6 +68,7 @@ export default function Dashboard() {
           )
         `)
         .eq('user_id', user.id)
+        .limit(MAX_DISPLAY_CHATS)
       
       if (error) throw error
       setJoinedEvents(data.map(item => item.events))
@@ -89,29 +110,38 @@ export default function Dashboard() {
     }
   }
 
+  const handleSearchResults = (results) => {
+    setSearchResults(results)
+  }
+
+  const displayEvents = searchResults || events
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-6">
-      {/* Search Events */}
-      <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
-        <h2 className="text-xl font-display mb-4">Búsqueda de Eventos</h2>
-        <div className="flex gap-4">
-          <Input
-            placeholder="Buscar eventos por ciudad..."
-            className="bg-white/5 border-white/10 text-white"
-          />
-          <Button className="bg-purple-500 hover:bg-purple-600">
-            Buscar
-          </Button>
-        </div>
-      </div>
+      <EventSearch 
+        onSearchResults={handleSearchResults} 
+        onReset={() => setSearchResults(null)} 
+        allEvents={allEvents}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upcoming Events */}
         <div className="lg:col-span-2">
           <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
-            <h2 className="text-xl font-display mb-4">Próximos Eventos</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-display">
+                {searchResults ? 'Resultados de búsqueda' : 'Próximos Eventos'}
+              </h2>
+              {!searchResults && totalEventCount > MAX_DISPLAY_EVENTS && (
+                <Link href="/events">
+                  <Button variant="link" className="text-purple-400 hover:text-purple-300">
+                    Ver todos <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
+            </div>
             <div className="space-y-4">
-              {events.map((event) => {
+              {displayEvents.slice(0, searchResults ? displayEvents.length : MAX_DISPLAY_EVENTS).map((event) => {
                 const isParticipant = joinedEvents.some(je => je.id === event.id);
                 return (
                   <div 
@@ -192,9 +222,18 @@ export default function Dashboard() {
 
       {/* Event Chats */}
       <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
-        <h2 className="text-xl font-display mb-4">Chats de Eventos</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-display">Chats de Eventos</h2>
+          {joinedEvents.length > MAX_DISPLAY_CHATS && (
+            <Link href="/chats">
+              <Button variant="link" className="text-purple-400 hover:text-purple-300">
+                Ver todos <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
+          )}
+        </div>
         <div className="space-y-4">
-          {joinedEvents.map((event) => (
+          {joinedEvents.slice(0, MAX_DISPLAY_CHATS).map((event) => (
             <div 
               key={event.id}
               className="group p-4 rounded-lg bg-black/40 border border-white/20 backdrop-blur-lg hover:bg-black/50 transition-all shadow-md"
