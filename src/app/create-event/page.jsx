@@ -35,6 +35,7 @@ export default function CreateEventForm() {
     description: "",
   })
   const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -70,9 +71,10 @@ export default function CreateEventForm() {
     const formErrors = validateForm()
     
     if (Object.keys(formErrors).length === 0) {
+      setIsSubmitting(true)
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error("No user logged in")
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError) throw new Error("No user logged in")
 
         let eventDateTime = null
         if (date && time !== "undefined") {
@@ -81,7 +83,7 @@ export default function CreateEventForm() {
           eventDateTime.setHours(parseInt(hours), parseInt(minutes))
         }
 
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('events')
           .insert([
             { 
@@ -92,13 +94,17 @@ export default function CreateEventForm() {
               created_by: user.id
             }
           ])
+          .select()
 
         if (error) throw error
 
+        console.log('Event created successfully:', data)
         router.push("/dashboard")
       } catch (error) {
-        console.error('Error:', error)
-        setErrors({ submit: "Hubo un problema al crear el evento. Por favor, intenta de nuevo." })
+        console.error('Error creating event:', error)
+        setErrors({ submit: `Error al crear el evento: ${error.message}` })
+      } finally {
+        setIsSubmitting(false)
       }
     } else {
       setErrors(formErrors)
@@ -221,8 +227,9 @@ export default function CreateEventForm() {
             <Button
               type="submit"
               className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+              disabled={isSubmitting}
             >
-              Crear Evento
+              {isSubmitting ? 'Creando...' : 'Crear Evento'}
             </Button>
           </form>
         </CardContent>

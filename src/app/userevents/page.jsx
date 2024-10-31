@@ -41,7 +41,7 @@ export default function UserEventsPage() {
       if (error) throw error
       const events = data.map(item => item.events).filter(Boolean)
       setJoinedEvents(events)
-      setAllJoinedEvents(events) // Guardamos una copia de todos los eventos para la búsqueda
+      setAllJoinedEvents(events)
     } catch (error) {
       console.error('Error fetching joined events:', error)
     } finally {
@@ -107,17 +107,19 @@ export default function UserEventsPage() {
                       </h3>
                       <div className="flex items-center gap-2 text-sm text-gray-300">
                         <Calendar className="h-4 w-4" />
-                        {new Date(event.date).toLocaleString('es-ES', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                        {event.date 
+                          ? new Date(event.date).toLocaleString('es-ES', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : "Por definir"}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-300">
                         <MapPin className="h-4 w-4" />
-                        {event.location}
+                        {event.location || "Por definir"}
                       </div>
                     </div>
                   </div>

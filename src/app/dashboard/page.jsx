@@ -31,7 +31,11 @@ export default function Dashboard() {
     try {
       const [{ count }, { data }] = await Promise.all([
         supabase.from('events').select('id', { count: 'exact', head: true }),
-        supabase.from('events').select('*').order('date', { ascending: true }).limit(MAX_DISPLAY_EVENTS)
+        supabase
+          .from('events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(MAX_DISPLAY_EVENTS)
       ])
       
       if (data) setEvents(data)
@@ -46,7 +50,7 @@ export default function Dashboard() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .order('date', { ascending: true })
+        .order('created_at', { ascending: false })
       
       if (error) throw error
       setAllEvents(data)
@@ -64,14 +68,16 @@ export default function Dashboard() {
           events (
             id,
             title,
-            date
+            date,
+            created_at
           )
         `)
         .eq('user_id', user.id)
+        .order('events.created_at', { ascending: false })
         .limit(MAX_DISPLAY_CHATS)
       
       if (error) throw error
-      setJoinedEvents(data.map(item => item.events))
+      setJoinedEvents(data.map(item => item.events).filter(Boolean))
     } catch (error) {
       console.error('Error fetching joined events:', error)
     }
@@ -130,7 +136,7 @@ export default function Dashboard() {
           <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-display">
-                {searchResults ? 'Resultados de búsqueda' : 'Próximos Eventos'}
+                {searchResults ? 'Resultados de búsqueda' : 'Eventos Recientes'}
               </h2>
               {!searchResults && totalEventCount > MAX_DISPLAY_EVENTS && (
                 <Link href="/events">
@@ -159,17 +165,19 @@ export default function Dashboard() {
                           </h3>
                           <div className="flex items-center gap-2 text-sm text-gray-300">
                             <Calendar className="h-4 w-4" />
-                            {new Date(event.date).toLocaleString('es-ES', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {event.date 
+                              ? new Date(event.date).toLocaleString('es-ES', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : "Por definir"}
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-300">
                             <MapPin className="h-4 w-4" />
-                            {event.location}
+                            {event.location || "Por definir"}
                           </div>
                         </div>
                       </div>
@@ -248,7 +256,9 @@ export default function Dashboard() {
                       {event.title}
                     </h3>
                     <p className="text-sm text-gray-300">
-                      {new Date(event.date).toLocaleDateString()}
+                      {event.date
+                        ? new Date(event.date).toLocaleDateString()
+                        : "Fecha por definir"}
                     </p>
                   </div>
                 </div>
