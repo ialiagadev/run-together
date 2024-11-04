@@ -34,7 +34,6 @@ export default function Dashboard() {
         supabase
           .from('events')
           .select('*')
-          .order('created_at', { ascending: false })
           .limit(MAX_DISPLAY_EVENTS)
       ])
       
