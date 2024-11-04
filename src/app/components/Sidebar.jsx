@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { Home, Calendar, User, MessageCircle, Settings, LogOut, PlusCircle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import useLogout from './logout'
 
 export default function Sidebar() {
+  const handleLogout = useLogout()
+
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Inicio' },
     { href: '/profile', icon: User, label: 'Perfil' },
@@ -10,7 +13,6 @@ export default function Sidebar() {
     { href: '/userevents', icon: Calendar, label: 'Mis Eventos' },
     { href: '/events', icon: Calendar, label: 'Todos los Eventos' },
     { href: '/settings', icon: Settings, label: 'Configuración' },
-
   ]
 
   return (
@@ -51,6 +53,7 @@ export default function Sidebar() {
         </Link>
 
         <Button 
+          onClick={handleLogout}
           variant="ghost" 
           className="w-full justify-start text-gray-300 hover:text-white hover:bg-purple-500/20"
         >

@@ -145,7 +145,7 @@ export default function CreateEventForm() {
               )}
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-white">Fecha</Label>
                 <Popover>

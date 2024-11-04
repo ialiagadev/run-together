@@ -38,19 +38,21 @@ export default function EventPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900/50 to-black">
-        <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
+        <Loader2 className="h-12 w-12 animate-spin text-purple-400" />
       </div>
     )
   }
 
   if (!event) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900/50 to-black">
-        <Card className="w-full max-w-md bg-black/60 border-white/20 backdrop-blur-md">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900/50 to-black p-4">
+        <Card className="w-full max-w-md bg-black/60 border-purple-500/20 backdrop-blur-md">
           <CardContent className="flex flex-col items-center justify-center p-6">
             <CardTitle className="text-2xl font-bold text-white mb-4">Evento no encontrado</CardTitle>
             <Link href="/events">
-              <Button variant="outline" className="mt-4">Volver a eventos</Button>
+              <Button variant="outline" className="mt-4 bg-purple-600/20 border-purple-400 text-purple-200 hover:bg-purple-500/30 hover:text-white transition-colors">
+                Volver a eventos
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -59,22 +61,22 @@ export default function EventPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Card className="bg-black/60 border-white/20 backdrop-blur-md overflow-hidden">
-            <CardHeader className="bg-purple-900/30 border-b border-white/10 pb-6">
-              <CardTitle className="text-3xl font-bold text-white">{event.title}</CardTitle>
+          <Card className="bg-black/60 border-purple-500/20 backdrop-blur-md overflow-hidden">
+            <CardHeader className="bg-purple-900/30 border-b border-purple-500/20 pb-6">
+              <CardTitle className="text-2xl sm:text-3xl font-bold text-white">{event.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="grid gap-4">
                 <div className="flex items-center gap-3 text-purple-200">
-                  <Calendar className="h-5 w-5 text-purple-400" />
-                  <span>
+                  <Calendar className="h-5 w-5 flex-shrink-0 text-purple-400" />
+                  <span className="text-sm sm:text-base">
                     {new Date(event.date).toLocaleDateString('es-ES', {
                       weekday: 'long',
                       year: 'numeric',
@@ -84,8 +86,8 @@ export default function EventPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-purple-200">
-                  <Clock className="h-5 w-5 text-purple-400" />
-                  <span>
+                  <Clock className="h-5 w-5 flex-shrink-0 text-purple-400" />
+                  <span className="text-sm sm:text-base">
                     {new Date(event.date).toLocaleTimeString('es-ES', {
                       hour: '2-digit',
                       minute: '2-digit'
@@ -93,29 +95,27 @@ export default function EventPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-purple-200">
-                  <MapPin className="h-5 w-5 text-purple-400" />
-                  <span>{event.location}</span>
-                </div>
-                <div className="flex items-center gap-3 text-purple-200">
+                  <MapPin className="h-5 w-5 flex-shrink-0 text-purple-400" />
+                  <span className="text-sm sm:text-base">{event.location}</span>
                 </div>
               </div>
 
               <div className="bg-purple-900/20 rounded-lg p-4">
                 <h3 className="text-lg font-semibold mb-2 text-white">Descripción</h3>
-                <p className="text-purple-100">
+                <p className="text-purple-100 text-sm sm:text-base">
                   {event.description}
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href={`/events/${id}/chat`} className="flex-1">
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white" size="lg">
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/30 transition-all duration-300 ease-in-out transform hover:scale-105" size="lg">
                     <MessageCircle className="mr-2 h-5 w-5" />
                     Ir al Chat
                   </Button>
                 </Link>
                 <Link href="/events" className="flex-1">
-                  <Button variant="outline" className="w-full border-purple-500 text-black-200 hover:bg-purple-400" size="lg">
+                  <Button variant="outline" className="w-full bg-purple-600/20 border-purple-400 text-purple-200 hover:bg-purple-500/30 hover:text-white shadow-lg shadow-purple-500/20 transition-all duration-300 ease-in-out transform hover:scale-105" size="lg">
                     Volver a eventos
                   </Button>
                 </Link>

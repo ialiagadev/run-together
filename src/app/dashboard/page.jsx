@@ -123,7 +123,7 @@ export default function Dashboard() {
   const displayEvents = searchResults || events
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 p-6">
+    <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
       <EventSearch 
         onSearchResults={handleSearchResults} 
         onReset={() => setSearchResults(null)} 
@@ -133,14 +133,14 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upcoming Events */}
         <div className="lg:col-span-2">
-          <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-display">
+          <div className="p-4 sm:p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+              <h2 className="text-xl font-display mb-2 sm:mb-0">
                 {searchResults ? 'Resultados de búsqueda' : 'Eventos Recientes'}
               </h2>
               {!searchResults && totalEventCount > MAX_DISPLAY_EVENTS && (
                 <Link href="/events">
-                  <Button variant="link" className="text-purple-400 hover:text-purple-300">
+                  <Button variant="link" className="text-purple-400 hover:text-purple-300 px-0 sm:px-2">
                     Ver todos <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 </Link>
@@ -154,8 +154,8 @@ export default function Dashboard() {
                     key={event.id}
                     className="group p-4 rounded-lg bg-black/40 border border-white/20 backdrop-blur-lg hover:bg-black/50 transition-all shadow-md"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                      <div className="flex items-center gap-4 mb-4 sm:mb-0">
                         <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500/40 to-pink-500/40 border border-white/20 flex items-center justify-center shadow-inner">
                           <Route className="h-6 w-6 text-purple-100" />
                         </div>
@@ -186,7 +186,7 @@ export default function Dashboard() {
                         disabled={isParticipant}
                         variant={isParticipant ? "secondary" : "default"}
                         className={`
-                          transition-all
+                          transition-all w-full sm:w-auto
                           ${isParticipant 
                             ? 'bg-purple-700/40 text-white hover:bg-purple-600/50' 
                             : 'bg-purple-600/80 hover:bg-purple-700/90 text-white'
@@ -205,7 +205,7 @@ export default function Dashboard() {
 
         {/* Quick Access */}
         <div>
-          <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
+          <div className="p-4 sm:p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
             <h2 className="text-xl font-display mb-4">Acceso Rápido</h2>
             <div className="space-y-3">
               <Link href="/create-event" className="block w-full">
@@ -229,12 +229,12 @@ export default function Dashboard() {
       </div>
 
       {/* Event Chats */}
-      <div className="p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-display">Chats de Eventos</h2>
+      <div className="p-4 sm:p-6 rounded-xl bg-black/30 border border-white/20 backdrop-blur-md shadow-lg">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+          <h2 className="text-xl font-display mb-2 sm:mb-0">Chats de Eventos</h2>
           {joinedEvents.length > MAX_DISPLAY_CHATS && (
             <Link href="/chats">
-              <Button variant="link" className="text-purple-400 hover:text-purple-300">
+              <Button variant="link" className="text-purple-400 hover:text-purple-300 px-0 sm:px-2">
                 Ver todos <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>
@@ -246,8 +246,8 @@ export default function Dashboard() {
               key={event.id}
               className="group p-4 rounded-lg bg-black/40 border border-white/20 backdrop-blur-lg hover:bg-black/50 transition-all shadow-md"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                <div className="flex items-center gap-4 mb-4 sm:mb-0">
                   <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500/40 to-pink-500/40 border border-white/20 flex items-center justify-center shadow-inner">
                     <MessageCircle className="h-6 w-6 text-purple-100" />
                   </div>
@@ -262,8 +262,8 @@ export default function Dashboard() {
                     </p>
                   </div>
                 </div>
-                <Link href={`/events/${event.id}/chat`}>
-                  <Button className="bg-purple-700/40 hover:bg-purple-600/50 text-white transition-all">
+                <Link href={`/events/${event.id}/chat`} className="w-full sm:w-auto">
+                  <Button className="w-full sm:w-auto bg-purple-700/40 hover:bg-purple-600/50 text-white transition-all">
                     Abrir Chat
                   </Button>
                 </Link>

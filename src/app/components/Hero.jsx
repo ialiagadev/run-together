@@ -27,7 +27,7 @@ export default function Hero() {
 
           <div className="relative z-10 text-center px-4">
             <h1 className="text-6xl md:text-8xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-6 font-display">
-              Run-Together
+              SOCIAL-KM
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto">
               Corre. Conecta. Comparte la pasión.

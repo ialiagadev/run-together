@@ -33,10 +33,29 @@ export default function ClientLayout({ children }) {
     setSidebarOpen(!sidebarOpen)
   }
 
+  // Cerrar el sidebar al cambiar de ruta
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [pathname])
+
+  // Cerrar el sidebar al hacer clic fuera de él
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sidebarOpen && !event.target.closest('aside') && !event.target.closest('button[aria-label="Toggle sidebar"]')) {
+        setSidebarOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [sidebarOpen])
+
   if (isPublicPage) {
-    return <main className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black">
-      {children}
-    </main>
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black">
+        {children}
+      </main>
+    )
   }
 
   return (
@@ -67,6 +86,14 @@ export default function ClientLayout({ children }) {
         `}>
           <Sidebar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
         </aside>
+
+        {/* Overlay for mobile */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" 
+            onClick={toggleSidebar}
+          />
+        )}
 
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-hidden">

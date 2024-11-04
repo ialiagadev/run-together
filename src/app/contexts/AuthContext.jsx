@@ -36,7 +36,15 @@ export function AuthProvider({ children }) {
   const value = {
     signUp: (data) => supabase.auth.signUp(data),
     signIn: (data) => supabase.auth.signInWithPassword(data),
-    signOut: () => supabase.auth.signOut(),
+    signOut: async () => {
+      try {
+        const { error } = await supabase.auth.signOut()
+        if (error) throw error
+        setUser(null)
+      } catch (error) {
+        console.error('Error signing out:', error)
+      }
+    },
     user,
   }
 
