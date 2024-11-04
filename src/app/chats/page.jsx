@@ -18,6 +18,8 @@ export default function ChatsPage() {
 
   useEffect(() => {
     async function fetchChats() {
+      if (!user) return
+
       try {
         setLoading(true)
         setError(null)
@@ -36,47 +38,36 @@ export default function ChatsPage() {
           `)
           .eq('user_id', user.id)
 
-        if (participationsError) {
-          console.error('Error participations:', participationsError)
-          throw participationsError
-        }
-
-        if (!participations) {
-          setChats([])
-          return
-        }
+        if (participationsError) throw participationsError
 
         const chatsWithLastMessage = await Promise.all(
-          participations.map(async (participation) => {
-            if (!participation.events) return null
+          participations
+            .filter(p => p.events) // Filter out null events
+            .map(async (participation) => {
+              const { data: messages, error: messagesError } = await supabase
+                .from('event_chats')
+                .select(`
+                  message,
+                  created_at,
+                  profiles (
+                    username,
+                    avatar_url
+                  )
+                `)
+                .eq('event_id', participation.event_id)
+                .order('created_at', { ascending: false })
+                .limit(1)
 
-            const { data: messages, error: messagesError } = await supabase
-              .from('event_chats')
-              .select(`
-                message,
-                created_at,
-                profiles (
-                  username,
-                  avatar_url
-                )
-              `)
-              .eq('event_id', participation.event_id)
-              .order('created_at', { ascending: false })
-              .limit(1)
+              if (messagesError) throw messagesError
 
-            if (messagesError) {
-              console.error('Error messages:', messagesError)
-              throw messagesError
-            }
-
-            return {
-              ...participation.events,
-              lastMessage: messages && messages[0] ? messages[0] : null
-            }
-          })
+              return {
+                ...participation.events,
+                lastMessage: messages && messages[0] ? messages[0] : null
+              }
+            })
         )
 
-        setChats(chatsWithLastMessage.filter(Boolean))
+        setChats(chatsWithLastMessage)
       } catch (error) {
         console.error('Error fetching chats:', error)
         setError('Error al cargar los chats. Por favor, intenta de nuevo.')
@@ -85,9 +76,7 @@ export default function ChatsPage() {
       }
     }
 
-    if (user) {
-      fetchChats()
-    }
+    fetchChats()
   }, [user])
 
   if (loading) {
@@ -154,20 +143,24 @@ export default function ChatsPage() {
                           {chat.title}
                         </CardTitle>
                         <div className="text-sm text-gray-400">
-                          <div className="flex items-center gap-2 mt-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                              {new Date(chat.date).toLocaleDateString('es-ES', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <MapPin className="h-4 w-4" />
-                            <span className="line-clamp-1">{chat.location}</span>
-                          </div>
+                          {chat.date && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                {new Date(chat.date).toLocaleDateString('es-ES', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                          )}
+                          {chat.location && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <MapPin className="h-4 w-4" />
+                              <span className="line-clamp-1">{chat.location}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <MessageCircle className="h-5 w-5 text-purple-400 group-hover:text-purple-300 transition-colors" />
