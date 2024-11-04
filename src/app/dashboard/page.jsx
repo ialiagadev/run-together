@@ -72,7 +72,6 @@ export default function Dashboard() {
           )
         `)
         .eq('user_id', user.id)
-        .order('events.created_at', { ascending: false })
         .limit(MAX_DISPLAY_CHATS)
       
       if (error) throw error
