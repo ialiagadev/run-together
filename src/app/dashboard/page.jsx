@@ -18,14 +18,32 @@ export default function Dashboard() {
   const [joinedEvents, setJoinedEvents] = useState([])
   const [searchResults, setSearchResults] = useState(null)
   const [totalEventCount, setTotalEventCount] = useState(0)
+  const [username, setUsername] = useState('')
 
   useEffect(() => {
     if (user) {
       fetchEvents()
       fetchAllEvents()
       fetchJoinedEvents()
+      fetchUsername()
     }
   }, [user])
+
+  async function fetchUsername() {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .single()
+
+      if (error) throw error
+      setUsername(data.username || user.email)
+    } catch (error) {
+      console.error('Error fetching username:', error)
+      setUsername(user.email)
+    }
+  }
 
   async function fetchEvents() {
     try {
@@ -101,7 +119,7 @@ export default function Dashboard() {
           { 
             event_id: eventId, 
             user_id: user.id, 
-            message: `${user.email} se ha unido al evento.` 
+            message: `${username} se ha unido al evento.` 
           }
         ])
 
