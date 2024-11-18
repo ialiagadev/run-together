@@ -125,8 +125,20 @@ export default function Dashboard() {
 
       if (chatError) throw chatError
 
-      fetchEvents()
-      fetchJoinedEvents()
+      // Actualizar el estado local inmediatamente
+      const joinedEvent = allEvents.find(event => event.id === eventId)
+      if (joinedEvent) {
+        setJoinedEvents(prevJoinedEvents => [...prevJoinedEvents, joinedEvent])
+      }
+
+      // Actualizar el estado de eventos si es necesario
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === eventId 
+            ? { ...event, participants: (event.participants || 0) + 1 }
+            : event
+        )
+      )
     } catch (error) {
       console.error('Error joining event:', error)
     }
