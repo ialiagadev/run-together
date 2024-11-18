@@ -77,26 +77,30 @@ export default function EventPage() {
                 <div className="flex items-center gap-3 text-purple-200">
                   <Calendar className="h-5 w-5 flex-shrink-0 text-purple-400" />
                   <span className="text-sm sm:text-base">
-                    {new Date(event.date).toLocaleDateString('es-ES', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {event.date
+                      ? new Date(event.date).toLocaleDateString('es-ES', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })
+                      : "Fecha por definir"}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-purple-200">
                   <Clock className="h-5 w-5 flex-shrink-0 text-purple-400" />
                   <span className="text-sm sm:text-base">
-                    {new Date(event.date).toLocaleTimeString('es-ES', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {event.date
+                      ? new Date(event.date).toLocaleTimeString('es-ES', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      : "Hora por definir"}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-purple-200">
                   <MapPin className="h-5 w-5 flex-shrink-0 text-purple-400" />
-                  <span className="text-sm sm:text-base">{event.location}</span>
+                  <span className="text-sm sm:text-base">{event.location || "Ubicación por definir"}</span>
                 </div>
               </div>
 
