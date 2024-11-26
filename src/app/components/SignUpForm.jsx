@@ -3,9 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/contexts/AuthContext'
-import { supabase } from '@/app/lib/supabaseClient'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function SignUpForm() {
   const [loading, setLoading] = useState(false)
@@ -14,152 +18,162 @@ export default function SignUpForm() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [registrationComplete, setRegistrationComplete] = useState(false)
   const router = useRouter()
   const { signUp } = useAuth()
 
   const handleSignUp = async (e) => {
     e.preventDefault()
+    setError('')
 
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden')
       return
     }
 
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres')
+      return
+    }
+
     try {
       setLoading(true)
-      setError('')
-      
-      // 1. Registrar el usuario
-      const { data, error: signUpError } = await signUp({ 
-        email, 
-        password,
-        options: {
-          data: {
-            email_confirmed: true
-          }
-        }
-      })
-      
-      if (signUpError) throw signUpError
-
-      if (data.user) {
-        try {
-          // 2. Intentar crear el perfil
-          const { error: profileError } = await supabase.rpc('handle_new_user', {
-            email: data.user.email,
-            user_id: data.user.id
-          })
-          
-          if (profileError) {
-            console.error('Error creating profile:', profileError)
-            // Si hay un error con el perfil, pero el usuario se creó, continuamos
-            // ya que el ON CONFLICT manejará duplicados
-          }
-
-          // 3. Redirigir al usuario
-          router.push('/profile')
-        } catch (profileError) {
-          console.error('Profile creation error:', profileError)
-          // Incluso si hay un error con el perfil, permitimos continuar
-          router.push('/profile')
-        }
-      }
+      const { data, error } = await signUp({ email, password })
+      if (error) throw error
+      console.log('Sign up data:', data)
+      setRegistrationComplete(true)
     } catch (error) {
       console.error('SignUp error:', error)
-      setError(error.error_description || error.message || 'Error durante el registro')
+      setError('Error durante el registro: ' + (error.message || 'Intente nuevamente más tarde'))
     } finally {
       setLoading(false)
     }
   }
 
+  if (registrationComplete) {
+    return (
+      <Card className="w-full max-w-md bg-black/60 border-white/20 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center text-purple-400">
+            Registro Completado
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert className="mb-4">
+            <AlertTitle>Verifica tu correo electrónico</AlertTitle>
+            <AlertDescription>
+              Se ha enviado un correo de confirmación a {email} desde supabase. 
+              Por favor, verifica tu bandeja de entrada y sigue las instrucciones para activar tu cuenta.
+            </AlertDescription>
+          </Alert>
+          <p className="text-center text-white mb-4">
+            Si no recibes el correo en unos minutos, revisa tu carpeta de spam o solicita un nuevo correo de confirmación.
+          </p>
+          <Button
+            onClick={() => router.push('/signin')}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+          >
+            Ir a Iniciar Sesión
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-purple-400">
-            Crea tu cuenta
-          </h2>
-        </div>
-        <form onSubmit={handleSignUp} className="mt-8 space-y-6">
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email
-              </label>
-              <input
+    <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md bg-black/60 border-white/20 backdrop-blur-sm">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center text-purple-400">
+            Crear cuenta
+          </CardTitle>
+          <CardDescription className="text-center text-gray-400">
+            Ingresa tus datos para registrarte
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSignUp} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white">
+                Correo electrónico
+              </Label>
+              <Input
                 id="email"
-                name="email"
                 type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white rounded-t-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm bg-gray-800"
-                placeholder="Email"
+                placeholder="tu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-white/5 border-white/10 text-white"
               />
             </div>
-            <div className="relative">
-              <label htmlFor="password" className="sr-only">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white">
                 Contraseña
-              </label>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm bg-gray-800"
-                placeholder="Contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
-            <div className="relative">
-              <label htmlFor="confirm-password" className="sr-only">
-                Confirmar Contraseña
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password" className="text-white">
+                Confirmar contraseña
+              </Label>
+              <Input
                 id="confirm-password"
-                name="confirm-password"
                 type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white rounded-b-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm bg-gray-800"
-                placeholder="Confirmar Contraseña"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="bg-white/5 border-white/10 text-white"
               />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
-              </button>
             </div>
-          </div>
 
-          {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
-          )}
+            {error && (
+              <div className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded-md">
+                {error}
+              </div>
+            )}
 
-          <div>
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              className="w-full bg-purple-600 hover:bg-purple-700"
             >
               {loading ? 'Registrando...' : 'Registrarse'}
-            </button>
-          </div>
-        </form>
-        <p className="mt-2 text-center text-sm text-gray-400">
-          ¿Ya tienes una cuenta?{' '}
-          <Link href="/signin" className="font-medium text-purple-400 hover:text-purple-300">
-            Inicia sesión aquí
-          </Link>
-        </p>
-      </div>
+            </Button>
+
+            <p className="text-center text-sm text-gray-400">
+              ¿Ya tienes una cuenta?{' '}
+              <Link
+                href="/signin"
+                className="text-purple-400 hover:text-purple-300 hover:underline"
+              >
+                Inicia sesión
+              </Link>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
+

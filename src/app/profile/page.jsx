@@ -26,7 +26,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [isNewUser, setIsNewUser] = useState(false)
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const fileInputRef = useRef(null)
@@ -44,11 +43,8 @@ export default function ProfilePage() {
         .eq('id', user.id)
         .single()
       
-      if (error) {
-        if (error.code === 'PGRST116') setIsNewUser(true)
-        else throw error
-      }
-      if (data) setProfile(data)
+      if (error) throw error
+      setProfile(data || {})
     } catch (error) {
       console.error('Error fetching profile:', error)
       setError('Error al cargar el perfil')
@@ -97,6 +93,7 @@ export default function ProfilePage() {
       setLoading(true)
       setError('')
       setMessage('')
+
       let avatarUrl = profile.avatar_url
       if (avatarFile) {
         avatarUrl = await uploadAvatar()
@@ -109,17 +106,14 @@ export default function ProfilePage() {
           username: profile.username,
           name: profile.name,
           age: profile.age,
-          bio: profile.bio,
+          bio: profile.bio || null,
           running_frequency: profile.running_frequency,
-          avatar_url: avatarUrl
+          avatar_url: avatarUrl,
         })
 
       if (error) throw error
-      setMessage(isNewUser ? 'Perfil creado con éxito' : 'Perfil actualizado con éxito')
-      if (isNewUser) router.push('/dashboard')
-      else {
-        await fetchProfile()
-      }
+      setMessage('Perfil actualizado con éxito')
+      router.push('/dashboard')
     } catch (error) {
       console.error('Error updating profile:', error)
       setError('Error al actualizar el perfil: ' + error.message)
@@ -140,7 +134,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 p-8 bg-black/60 rounded-xl shadow-lg backdrop-blur-sm border border-white/10">
         <h1 className="text-3xl font-bold text-center text-purple-400 mb-6">
-          {isNewUser ? 'Crea tu Perfil' : 'Perfil de Usuario'}
+          Perfil de Usuario
         </h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col items-center">
@@ -167,12 +161,11 @@ export default function ProfilePage() {
               onChange={handleAvatarChange}
               className="hidden"
               ref={fileInputRef}
-              capture="user"
             />
           </div>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="username" className="text-white">Nombre de usuario</Label>
+              <Label htmlFor="username" className="text-white">Nombre de usuario *</Label>
               <Input
                 type="text"
                 id="username"
@@ -185,7 +178,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <Label htmlFor="name" className="text-white">Nombre completo</Label>
+              <Label htmlFor="name" className="text-white">Nombre completo *</Label>
               <Input
                 type="text"
                 id="name"
@@ -198,7 +191,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <Label htmlFor="age" className="text-white">Edad</Label>
+              <Label htmlFor="age" className="text-white">Edad *</Label>
               <Input
                 type="number"
                 id="age"
@@ -213,10 +206,11 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <Label htmlFor="running_frequency" className="text-white">Frecuencia de carrera</Label>
+              <Label htmlFor="running_frequency" className="text-white">Frecuencia de carrera *</Label>
               <Select
                 value={profile.running_frequency}
                 onValueChange={(value) => handleChange({ target: { name: 'running_frequency', value } })}
+                required
               >
                 <SelectTrigger className="bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="¿Cada cuánto sales a correr?" />
@@ -231,27 +225,27 @@ export default function ProfilePage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="bio" className="text-white">Biografía</Label>
+              <Label htmlFor="bio" className="text-white">Biografía (opcional)</Label>
               <Textarea
                 id="bio"
                 name="bio"
                 value={profile.bio}
                 onChange={handleChange}
                 rows={3}
-                placeholder="Cuéntanos sobre ti"
+                placeholder="Cuéntanos sobre ti (opcional)"
                 className="bg-white/5 border-white/10 text-white placeholder-gray-400"
               />
             </div>
-          
           </div>
           {error && <div className="text-red-500 text-sm text-center">{error}</div>}
           {message && <div className="text-green-500 text-sm text-center">{message}</div>}
           <Button type="submit" disabled={loading} className="w-full bg-purple-500 hover:bg-purple-700 text-white">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            {loading ? 'Procesando...' : isNewUser ? 'Crear Perfil' : 'Actualizar Perfil'}
+            {loading ? 'Procesando...' : 'Actualizar Perfil'}
           </Button>
         </form>
       </div>
     </div>
   )
 }
+
