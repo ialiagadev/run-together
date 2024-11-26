@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Home, Calendar, User, MessageCircle, Settings, LogOut, PlusCircle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useLogout from './logout'
@@ -17,10 +18,14 @@ export default function Sidebar() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-6">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-200 bg-clip-text text-transparent">
-          RunTogether
-        </h1>
+      <div className="p-6 flex justify-center items-center">
+        <Image
+          src="/images/logo.png"
+          alt="SocialKM Logo"
+          width={150}
+          height={50}
+          className="object-contain"
+        />
       </div>
 
       <nav className="flex-1 px-3">
@@ -64,3 +69,4 @@ export default function Sidebar() {
     </div>
   )
 }
+

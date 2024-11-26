@@ -43,9 +43,7 @@ export default function Navbar() {
       isScrolled ? 'bg-black bg-opacity-80' : 'bg-transparent'
     }`}>
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="text-white text-xl font-bold font-display">
-          RunTogether
-        </Link>
+       
         <div className="space-x-4">
           {user ? (
             <>

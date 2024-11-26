@@ -113,7 +113,7 @@ export default function ClientLayout({ children }) {
                       <Menu className="h-6 w-6" />
                     )}
                   </button>
-                  <h1 className="text-2xl font-display">RunTogether</h1>
+                  
                 </div>
               </div>
             </div>
@@ -126,7 +126,7 @@ export default function ClientLayout({ children }) {
 
           {/* Footer */}
           <footer className="py-4 text-center text-sm text-gray-500 bg-black/60 backdrop-blur-xl">
-            © {new Date().getFullYear()} RunTogether. Todos los derechos reservados.
+            © {new Date().getFullYear()}SocialKM. Todos los derechos reservados.
           </footer>
         </div>
       </div>

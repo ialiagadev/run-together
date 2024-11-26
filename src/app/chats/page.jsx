@@ -107,8 +107,8 @@ export default function ChatsPage() {
       <div className="container mx-auto px-4 py-8 min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900/50 to-black">
         <Card className="text-center p-8 bg-black/60 border-white/20 backdrop-blur-md w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-2xl mb-2">No participas en ningún chat</CardTitle>
-            <div className="text-sm text-muted-foreground">
+            <CardTitle className="text-2xl mb-2 text-white">No participas en ningún chat</CardTitle>
+            <div className="text-sm text-white text-muted-foreground">
               Únete a eventos para comenzar a chatear con otros participantes
             </div>
           </CardHeader>

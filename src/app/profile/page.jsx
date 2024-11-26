@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Camera, Loader2 } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -28,6 +29,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('')
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
+  const [isProfileComplete, setIsProfileComplete] = useState(false)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -45,12 +47,19 @@ export default function ProfilePage() {
       
       if (error) throw error
       setProfile(data || {})
+      checkProfileCompletion(data)
     } catch (error) {
       console.error('Error fetching profile:', error)
       setError('Error al cargar el perfil')
     } finally {
       setLoading(false)
     }
+  }
+
+  const checkProfileCompletion = (profileData) => {
+    const requiredFields = ['username', 'name', 'age', 'running_frequency']
+    const isComplete = requiredFields.every(field => profileData && profileData[field])
+    setIsProfileComplete(isComplete)
   }
 
   const handleChange = (e) => {
@@ -94,6 +103,14 @@ export default function ProfilePage() {
       setError('')
       setMessage('')
 
+      // Verificar campos requeridos
+      const requiredFields = ['username', 'name', 'age', 'running_frequency']
+      const missingFields = requiredFields.filter(field => !profile[field])
+      if (missingFields.length > 0) {
+        setError(`Por favor, completa los siguientes campos: ${missingFields.join(', ')}`)
+        return
+      }
+
       let avatarUrl = profile.avatar_url
       if (avatarFile) {
         avatarUrl = await uploadAvatar()
@@ -113,6 +130,7 @@ export default function ProfilePage() {
 
       if (error) throw error
       setMessage('Perfil actualizado con éxito')
+      setIsProfileComplete(true)
       router.push('/dashboard')
     } catch (error) {
       console.error('Error updating profile:', error)
@@ -134,8 +152,16 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 p-8 bg-black/60 rounded-xl shadow-lg backdrop-blur-sm border border-white/10">
         <h1 className="text-3xl font-bold text-center text-purple-400 mb-6">
-          Perfil de Usuario
+          {isProfileComplete ? 'Actualizar Perfil' : 'Completa tu Perfil'}
         </h1>
+        {!isProfileComplete && (
+          <Alert className="mb-4">
+            <AlertTitle>Perfil Incompleto</AlertTitle>
+            <AlertDescription>
+              Por favor, completa todos los campos requeridos para continuar.
+            </AlertDescription>
+          </Alert>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col items-center">
             <div className="relative">
@@ -241,7 +267,7 @@ export default function ProfilePage() {
           {message && <div className="text-green-500 text-sm text-center">{message}</div>}
           <Button type="submit" disabled={loading} className="w-full bg-purple-500 hover:bg-purple-700 text-white">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            {loading ? 'Procesando...' : 'Actualizar Perfil'}
+            {loading ? 'Procesando...' : (isProfileComplete ? 'Actualizar Perfil' : 'Completar Perfil')}
           </Button>
         </form>
       </div>
