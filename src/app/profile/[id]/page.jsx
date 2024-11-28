@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Calendar, Trophy } from 'lucide-react'
+import { Calendar, Trophy, Loader2 } from 'lucide-react'
 
 export default function ProfilePage() {
   const { id } = useParams()
@@ -47,16 +47,16 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Cargando perfil...</div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900/50 to-black">
+        <Loader2 className="h-12 w-12 animate-spin text-purple-400" />
       </div>
     )
   }
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Perfil no encontrado</div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900/50 to-black">
+        <div className="text-lg text-white">Perfil no encontrado</div>
       </div>
     )
   }
@@ -80,75 +80,77 @@ export default function ProfilePage() {
   const initials = getInitials(profile.username || profile.name)
 
   return (
-    <div className="container max-w-4xl mx-auto p-4 space-y-6">
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center md:flex-row md:items-start gap-6">
-            <div>
-              <Avatar 
-                className="w-32 h-32 cursor-pointer transition-transform hover:scale-105"
-                onClick={() => setIsAvatarOpen(true)}
-              >
-                <AvatarImage src={profile.avatar_url} alt={profile.username} />
-                <AvatarFallback className="bg-purple-600 text-white text-4xl">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black py-8 px-4 sm:px-6 lg:px-8">
+      <div className="container max-w-4xl mx-auto space-y-6">
+        <Card className="bg-black/60 border-purple-500/20 backdrop-blur-md overflow-hidden">
+          <CardContent className="p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <div className="flex-shrink-0">
+                <Avatar 
+                  className="w-32 h-32 cursor-pointer transition-transform hover:scale-105 border-4 border-purple-500/50"
+                  onClick={() => setIsAvatarOpen(true)}
+                >
+                  <AvatarImage src={profile.avatar_url} alt={profile.username} />
+                  <AvatarFallback className="bg-purple-600 text-white text-4xl">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
 
-              <Dialog open={isAvatarOpen} onOpenChange={setIsAvatarOpen}>
-                <DialogContent className="max-w-md sm:max-w-lg p-0">
-                  {profile.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt={`Foto de perfil de ${profile.username}`}
-                      className="w-full h-auto rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full aspect-square flex items-center justify-center bg-purple-600 text-white text-8xl rounded-lg">
-                      {initials}
+                <Dialog open={isAvatarOpen} onOpenChange={setIsAvatarOpen}>
+                  <DialogContent className="max-w-md sm:max-w-lg p-0">
+                    {profile.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={`Foto de perfil de ${profile.username}`}
+                        className="w-full h-auto rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-full aspect-square flex items-center justify-center bg-purple-600 text-white text-8xl rounded-lg">
+                        {initials}
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="flex-1 text-center sm:text-left">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{profile.username}</h1>
+                {profile.name && (
+                  <div className="text-purple-300 mb-4">{profile.name}</div>
+                )}
+                <div className="space-y-2 mb-4">
+                  {profile.age && (
+                    <div className="flex items-center justify-center sm:justify-start gap-2 text-purple-200">
+                      <Calendar className="w-5 h-5" />
+                      <span>{profile.age} años</span>
                     </div>
                   )}
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="flex-1 text-center md:text-left">
-              <h1 className="text-2xl font-bold">{profile.username}</h1>
-              {profile.name && (
-                <div className="text-gray-500 mb-2">{profile.name}</div>
-              )}
-              <div className="space-y-2 mt-4">
-                {profile.age && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm">{profile.age} años</span>
-                  </div>
-                )}
-                {profile.running_frequency && (
-                  <div className="flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm">Frecuencia de carrera:  {getRunningFrequencyText(profile.running_frequency)}</span>
+                  {profile.running_frequency && (
+                    <div className="flex items-center justify-center sm:justify-start gap-2 text-purple-200">
+                      <Trophy className="w-5 h-5" />
+                      <span>Corre {getRunningFrequencyText(profile.running_frequency)}</span>
+                    </div>
+                  )}
+                </div>
+                {profile.bio && (
+                  <div className="mt-4">
+                    <h2 className="text-xl font-semibold mb-2 text-white">Biografía</h2>
+                    <p className="text-purple-100">{profile.bio}</p>
                   </div>
                 )}
               </div>
-              {profile.bio && (
-                <div className="mt-4">
-                  <h2 className="text-lg font-semibold mb-2">Biografía</h2>
-                  <p className="text-gray-700">{profile.bio}</p>
-                </div>
-              )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {user?.id === id && (
-        <div className="flex justify-center">
-          <Button asChild>
-            <Link href="/profile/edit">Editar Perfil</Link>
-          </Button>
-        </div>
-      )}
+        {user?.id === id && (
+          <div className="flex justify-center">
+            <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white">
+              <Link href="/profile/edit">Editar Perfil</Link>
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
