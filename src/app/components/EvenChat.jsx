@@ -201,17 +201,17 @@ export default function EventChat({ eventId, currentUser }) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-100 dark:bg-gray-900">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-gradient-to-br from-purple-900/50 to-black">
       <ScrollArea ref={scrollAreaRef} className="flex-grow p-4">
         {loading && messages.length === 0 ? (
           <div className="flex justify-center items-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
           </div>
         ) : (
           <>
             {hasMoreMessages && (
               <div className="flex justify-center mb-4">
-                <Button onClick={loadMoreMessages} variant="outline" size="sm" disabled={loading}>
+                <Button onClick={loadMoreMessages} variant="outline" size="sm" disabled={loading} className="bg-purple-600/20 border-purple-400 text-purple-200 hover:bg-purple-500/30 hover:text-white">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
                   Cargar más mensajes
                 </Button>
@@ -226,14 +226,14 @@ export default function EventChat({ eventId, currentUser }) {
               >
                 <div className={`flex max-w-[70%] ${message.user_id === currentUser?.id ? 'flex-row-reverse' : 'flex-row'}`}>
                   <Link href={`/profile/${message.user_id}`}>
-                    <Avatar className="w-10 h-10 mr-2 cursor-pointer">
+                    <Avatar className="w-10 h-10 mr-2 cursor-pointer border-2 border-purple-500/50">
                       {message.avatar_url ? (
                         <AvatarImage 
                           src={message.avatar_url} 
                           alt={message.username}
                         />
                       ) : (
-                        <AvatarFallback className="bg-purple-500 text-white">
+                        <AvatarFallback className="bg-purple-600 text-white">
                           {getInitials(message.username)}
                         </AvatarFallback>
                       )}
@@ -241,17 +241,17 @@ export default function EventChat({ eventId, currentUser }) {
                   </Link>
                   <div className={`flex flex-col ${message.user_id === currentUser?.id ? 'items-end' : 'items-start'}`}>
                     <Link href={`/profile/${message.user_id}`}>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 mb-1 cursor-pointer hover:underline">
+                      <span className="text-xs text-purple-300 mb-1 cursor-pointer hover:underline">
                         {message.username}
                       </span>
                     </Link>
                     <div className={`p-3 rounded-lg ${
                       message.user_id === currentUser?.id
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-purple-900/40 text-purple-100'
                     }`}>
                       <p>{message.message}</p>
-                      <span className="text-xs opacity-70 mt-1 block">
+                      <span className="text-xs opacity-70 mt-1 block text-purple-200">
                         {formatDate(message.created_at)}
                       </span>
                     </div>
@@ -262,16 +262,16 @@ export default function EventChat({ eventId, currentUser }) {
           </>
         )}
       </ScrollArea>
-      <form onSubmit={sendMessage} className="border-t border-gray-200 dark:border-gray-700 p-4">
+      <form onSubmit={sendMessage} className="border-t border-purple-500/20 p-4 bg-black/40 backdrop-blur-md">
         <div className="flex items-center space-x-2">
-          <Avatar className="w-10 h-10">
+          <Avatar className="w-10 h-10 border-2 border-purple-500/50">
             {currentUser?.user_metadata?.avatar_url ? (
               <AvatarImage 
                 src={currentUser.user_metadata.avatar_url} 
                 alt={currentUser.email}
               />
             ) : (
-              <AvatarFallback className="bg-purple-500 text-white">
+              <AvatarFallback className="bg-purple-600 text-white">
                 {getInitials(currentUser?.user_metadata?.username || currentUser?.email || 'U')}
               </AvatarFallback>
             )}
@@ -281,9 +281,9 @@ export default function EventChat({ eventId, currentUser }) {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Escribe un mensaje..."
-            className="flex-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:ring-purple-500 focus:border-purple-500"
+            className="flex-1 bg-purple-900/20 border-purple-500/30 text-white placeholder-purple-300 focus:ring-purple-500 focus:border-purple-500"
           />
-          <Button type="submit" disabled={sending || !newMessage.trim()} className="bg-purple-500 hover:bg-purple-600 text-white">
+          <Button type="submit" disabled={sending || !newMessage.trim()} className="bg-purple-600 hover:bg-purple-700 text-white">
             {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
           </Button>
         </div>
