@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/contexts/AuthContext'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
-import { supabase } from '@/app/lib/supabaseClient'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function SignInForm() {
   const [loading, setLoading] = useState(false)
@@ -22,30 +25,20 @@ export default function SignInForm() {
     setLoading(true)
 
     try {
-      const { data, error } = await signIn({ email, password })
-      
-      if (error) throw error
-
-      if (data.user) {
-        router.push('/dashboard')
-      } else {
-        throw new Error('No se pudo iniciar sesión')
-      }
+      await signIn({ email, password })
+      // Si llegamos aquí, el inicio de sesión fue exitoso
+      // El AuthContext debería manejar la redirección, así que no necesitamos hacer nada más aquí
     } catch (error) {
-      console.error('Error:', error)
-      if (error.message === 'Invalid login credentials') {
-        setError('Correo electrónico o contraseña incorrectos')
-      } else {
-        setError('Error al iniciar sesión. Por favor, inténtalo de nuevo.')
-      }
+      console.error('Error de inicio de sesión:', error)
+      setError('Correo electrónico o contraseña incorrectos. Por favor, inténtalo de nuevo.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-black/60 p-8 rounded-xl backdrop-blur-sm border border-purple-500/20">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-purple-400">
             Inicia sesión en tu cuenta
@@ -53,33 +46,29 @@ export default function SignInForm() {
         </div>
         <form onSubmit={handleSignIn} className="mt-8 space-y-6">
           <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email
-              </label>
-              <input
+            <div className="mb-4">
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input
                 id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white rounded-t-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm bg-gray-800"
+                className="bg-white/5 border-white/10 text-white"
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="relative">
-              <label htmlFor="password" className="sr-only">
-                Contraseña
-              </label>
-              <input
+              <Label htmlFor="password" className="text-white">Contraseña</Label>
+              <Input
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white rounded-b-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm bg-gray-800"
+                className="bg-white/5 border-white/10 text-white"
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -95,17 +84,15 @@ export default function SignInForm() {
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
           <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
+            <Button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700">
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-            </button>
+            </Button>
           </div>
         </form>
         <p className="mt-2 text-center text-sm text-gray-400">
@@ -118,3 +105,4 @@ export default function SignInForm() {
     </div>
   )
 }
+

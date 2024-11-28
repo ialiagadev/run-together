@@ -7,107 +7,146 @@ import { supabase } from '@/app/lib/supabaseClient'
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+ const [user, setUser] = useState(null)
+ const [loading, setLoading] = useState(true)
+ const router = useRouter()
 
-  useEffect(() => {
-    const setData = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error('Error fetching session:', error)
-      } else {
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await checkAndRedirect(session.user)
-        }
-      }
-      setLoading(false)
-    }
+ useEffect(() => {
+   const setData = async () => {
+     try {
+       const { data: { session }, error } = await supabase.auth.getSession()
+       if (error) throw error
+       
+       setUser(session?.user ?? null)
+       if (session?.user) {
+         await checkAndRedirect(session.user)
+       }
+     } catch (error) {
+       console.error('Error fetching session:', error)
+     } finally {
+       setLoading(false)
+     }
+   }
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        await checkAndRedirect(session.user)
-      }
-      setLoading(false)
-    })
+   const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+     try {
+       setUser(session?.user ?? null)
+       if (session?.user) {
+         await checkAndRedirect(session.user)
+       }
+     } catch (error) {
+       console.error('Error in auth state change:', error)
+     } finally {
+       setLoading(false)
+     }
+   })
 
-    setData()
+   setData()
 
-    return () => {
-      listener?.subscription.unsubscribe()
-    }
-  }, [])
+   return () => {
+     listener?.subscription.unsubscribe()
+   }
+ }, [])
 
-  const checkAndRedirect = async (user) => {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+ const checkAndRedirect = async (user) => {
+   try {
+     const { data: profile, error } = await supabase
+       .from('profiles')
+       .select('*')
+       .eq('id', user.id)
+       .single()
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching profile:', error)
-      return
-    }
+     if (error && error.code !== 'PGRST116') {
+       console.error('Error fetching profile:', error)
+       return
+     }
 
-    if (!profile || !isProfileComplete(profile)) {
-      router.push('/profile')
-    } else {
-      router.push('/dashboard')
-    }
-  }
+     if (!profile || !isProfileComplete(profile)) {
+       router.push('/profile')
+     } else {
+       router.push('/dashboard')
+     }
+   } catch (error) {
+     console.error('Error in checkAndRedirect:', error)
+   }
+ }
 
-  const isProfileComplete = (profile) => {
-    const requiredFields = ['username', 'name', 'age', 'running_frequency']
-    return requiredFields.every(field => profile[field] && profile[field] !== '')
-  }
+ const isProfileComplete = (profile) => {
+   const requiredFields = ['username', 'name', 'age', 'running_frequency']
+   return requiredFields.every(field => profile[field] && profile[field] !== '')
+ }
 
-  const signUp = async (data) => {
-    const { error } = await supabase.auth.signUp(data)
-    if (error) throw error
-    // After successful sign up, create an empty profile
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{ id: user.id }])
-      if (profileError) throw profileError
-    }
-  }
+ const signUp = async (data) => {
+   try {
+     const { error: signUpError } = await supabase.auth.signUp(data)
+     if (signUpError) throw signUpError
 
-  const signIn = async (data) => {
-    const { error } = await supabase.auth.signInWithPassword(data)
-    if (error) throw error
-    // After successful sign in, check and redirect
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await checkAndRedirect(user)
-    }
-  }
+     const { data: { user }, error: userError } = await supabase.auth.getUser()
+     if (userError) throw userError
 
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-    router.push('/signin')
-  }
+     if (user) {
+       const { error: profileError } = await supabase
+         .from('profiles')
+         .insert([{ 
+           id: user.id,
+           username: '',
+           name: '',
+           age: null,
+           running_frequency: '',
+           bio: null,
+           avatar_url: null
+         }])
+       if (profileError) throw profileError
+     }
+   } catch (error) {
+     console.error('Error in signUp:', error)
+     throw error
+   }
+ }
 
-  const value = {
-    signUp,
-    signIn,
-    signOut,
-    user
-  }
+ const signIn = async (data) => {
+   try {
+     const { error: signInError } = await supabase.auth.signInWithPassword(data)
+     if (signInError) throw signInError
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  )
+     const { data: { user }, error: userError } = await supabase.auth.getUser()
+     if (userError) throw userError
+
+     if (user) {
+       await checkAndRedirect(user)
+     }
+   } catch (error) {
+     console.error('Error in signIn:', error)
+     throw error
+   }
+ }
+
+ const signOut = async () => {
+   try {
+     const { error } = await supabase.auth.signOut()
+     if (error) throw error
+     router.push('/signin')
+   } catch (error) {
+     console.error('Error in signOut:', error)
+     throw error
+   }
+ }
+
+ const value = {
+   signUp,
+   signIn,
+   signOut,
+   user
+ }
+
+ return (
+   <AuthContext.Provider value={value}>
+     {!loading && children}
+   </AuthContext.Provider>
+ )
 }
 
 export function useAuth() {
-  return useContext(AuthContext)
+ return useContext(AuthContext)
 }
 
