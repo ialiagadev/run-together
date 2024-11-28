@@ -128,7 +128,7 @@ export default function ProfilePage() {
                   {profile.running_frequency && (
                     <div className="flex items-center justify-center sm:justify-start gap-2 text-purple-200">
                       <Trophy className="w-5 h-5" />
-                      <span>Corre {getRunningFrequencyText(profile.running_frequency)}</span>
+                      <span>Frecuencia de carrera: {getRunningFrequencyText(profile.running_frequency)}</span>
                     </div>
                   )}
                 </div>
