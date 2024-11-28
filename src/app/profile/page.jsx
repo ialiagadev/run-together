@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Camera, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Camera, Loader2 } from 'lucide-react'
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB to match Supabase settings
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -25,11 +27,10 @@ export default function ProfilePage() {
     avatar_url: '',
   })
   const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
-  const [isProfileComplete, setIsProfileComplete] = useState(false)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -45,9 +46,29 @@ export default function ProfilePage() {
         .eq('id', user.id)
         .single()
       
-      if (error) throw error
-      setProfile(data || {})
-      checkProfileCompletion(data)
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile doesn't exist, create it with empty values
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              username: '',
+              name: '',
+              age: null,
+              running_frequency: '',
+            })
+            .select()
+            .single()
+          
+          if (insertError) throw insertError
+          setProfile(newProfile)
+        } else {
+          throw error
+        }
+      } else if (data) {
+        setProfile(data)
+      }
     } catch (error) {
       console.error('Error fetching profile:', error)
       setError('Error al cargar el perfil')
@@ -56,20 +77,18 @@ export default function ProfilePage() {
     }
   }
 
-  const checkProfileCompletion = (profileData) => {
-    const requiredFields = ['username', 'name', 'age', 'running_frequency']
-    const isComplete = requiredFields.every(field => profileData && profileData[field])
-    setIsProfileComplete(isComplete)
-  }
-
   const handleChange = (e) => {
     const { name, value } = e.target
     setProfile((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleAvatarChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files?.[0]
     if (file) {
+      if (file.size > MAX_FILE_SIZE) {
+        setError(`El archivo es demasiado grande. El tamaño máximo permitido es ${Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB.`)
+        return
+      }
       setAvatarFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -81,19 +100,36 @@ export default function ProfilePage() {
 
   const uploadAvatar = async () => {
     if (!avatarFile) return null
-    const fileExt = avatarFile.name.split('.').pop()
-    const fileName = `${user.id}/${Math.random()}.${fileExt}`
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, avatarFile)
-    if (uploadError) throw uploadError
+    
+    try {
+      const fileExt = avatarFile.name.split('.').pop()
+      const fileName = `${user.id}/${Math.random()}.${fileExt}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, avatarFile, {
+          cacheControl: '3600',
+          upsert: true
+        })
 
-    const { data: { publicUrl }, error: urlError } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName)
-    if (urlError) throw urlError
+      if (uploadError) {
+        if (uploadError.message?.includes('Payload too large')) {
+          throw new Error('El archivo es demasiado grande para ser procesado. Por favor, intenta con una imagen más pequeña.')
+        }
+        throw uploadError
+      }
 
-    return publicUrl
+      const { data: { publicUrl }, error: urlError } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName)
+
+      if (urlError) throw urlError
+
+      return publicUrl
+    } catch (error) {
+      console.error('Error uploading avatar:', error)
+      throw new Error(`Error al subir la imagen: ${error.message}`)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -101,13 +137,10 @@ export default function ProfilePage() {
     try {
       setLoading(true)
       setError('')
-      setMessage('')
+      setSuccess('')
 
-      // Verificar campos requeridos
-      const requiredFields = ['username', 'name', 'age', 'running_frequency']
-      const missingFields = requiredFields.filter(field => !profile[field])
-      if (missingFields.length > 0) {
-        setError(`Por favor, completa los siguientes campos: ${missingFields.join(', ')}`)
+      if (!profile.username || !profile.name || !profile.age || !profile.running_frequency) {
+        setError('Por favor, completa todos los campos requeridos.')
         return
       }
 
@@ -129,9 +162,10 @@ export default function ProfilePage() {
         })
 
       if (error) throw error
-      setMessage('Perfil actualizado con éxito')
-      setIsProfileComplete(true)
-      router.push('/dashboard')
+      setSuccess("Perfil actualizado correctamente")
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
     } catch (error) {
       console.error('Error updating profile:', error)
       setError('Error al actualizar el perfil: ' + error.message)
@@ -140,7 +174,10 @@ export default function ProfilePage() {
     }
   }
 
-  const getInitials = (name) => name.split(' ').map(word => word[0]).join('').toUpperCase()
+  const getInitials = (name) => {
+    if (!name) return '?'
+    return name.split(' ').map(word => word[0]).join('').toUpperCase()
+  }
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-black">
@@ -152,23 +189,15 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900/50 to-black flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 p-8 bg-black/60 rounded-xl shadow-lg backdrop-blur-sm border border-white/10">
         <h1 className="text-3xl font-bold text-center text-purple-400 mb-6">
-          {isProfileComplete ? 'Actualizar Perfil' : 'Completa tu Perfil'}
+          Perfil de Usuario
         </h1>
-        {!isProfileComplete && (
-          <Alert className="mb-4">
-            <AlertTitle>Perfil Incompleto</AlertTitle>
-            <AlertDescription>
-              Por favor, completa todos los campos requeridos para continuar.
-            </AlertDescription>
-          </Alert>
-        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col items-center">
             <div className="relative">
               <Avatar className="w-24 h-24 mb-4 border-2 border-purple-400">
                 <AvatarImage src={avatarPreview || profile.avatar_url} alt="Avatar" />
                 <AvatarFallback className="bg-purple-600 text-white text-xl font-bold">
-                  {getInitials(profile.name || user.email)}
+                  {getInitials(profile.name || '')}
                 </AvatarFallback>
               </Avatar>
               <Button
@@ -176,7 +205,7 @@ export default function ProfilePage() {
                 variant="outline"
                 size="icon"
                 className="absolute bottom-0 right-0 rounded-full bg-purple-500 hover:bg-purple-600 text-white"
-                onClick={() => fileInputRef.current.click()}
+                onClick={() => fileInputRef.current?.click()}
               >
                 <Camera className="h-4 w-4" />
               </Button>
@@ -235,7 +264,7 @@ export default function ProfilePage() {
               <Label htmlFor="running_frequency" className="text-white">Frecuencia de carrera *</Label>
               <Select
                 value={profile.running_frequency}
-                onValueChange={(value) => handleChange({ target: { name: 'running_frequency', value } })}
+                onValueChange={(value) => setProfile(prev => ({ ...prev, running_frequency: value }))}
                 required
               >
                 <SelectTrigger className="bg-white/5 border-white/10 text-white">
@@ -263,11 +292,21 @@ export default function ProfilePage() {
               />
             </div>
           </div>
-          {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-          {message && <div className="text-green-500 text-sm text-center">{message}</div>}
+          {error && (
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {success && (
+            <Alert variant="default" className="bg-green-500/20 text-green-300 border-green-500/50">
+              <AlertTitle>Éxito</AlertTitle>
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
           <Button type="submit" disabled={loading} className="w-full bg-purple-500 hover:bg-purple-700 text-white">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            {loading ? 'Procesando...' : (isProfileComplete ? 'Actualizar Perfil' : 'Completar Perfil')}
+            {loading ? 'Procesando...' : 'Actualizar Perfil'}
           </Button>
         </form>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { supabase } from '@/app/lib/supabaseClient'
 import EventChat from '@/app/components/EvenChat'
@@ -149,9 +150,10 @@ export default function EventChatPage() {
 
                 <div className="space-y-2">
                   {participants.map((participant) => (
-                    <div
+                    <Link
                       key={participant.id}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                      href={`/profile/${participant.id}`}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors block"
                     >
                       <Avatar>
                         <AvatarImage src={participant.avatar_url} />
@@ -167,7 +169,7 @@ export default function EventChatPage() {
                           <span className="text-xs text-white/60">(Tú)</span>
                         )}
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -182,3 +184,4 @@ export default function EventChatPage() {
     </div>
   )
 }
+

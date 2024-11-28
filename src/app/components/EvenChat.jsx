@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 import { Send, Loader2, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,16 +12,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const MESSAGES_PER_PAGE = 20;
 
+const getInitials = (name) => {
+  if (!name) return '?';
+  return name.charAt(0).toUpperCase();
+};
+
 export default function EventChat({ eventId, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [lastReadMessageId, setLastReadMessageId] = useState(null);
   const scrollAreaRef = useRef(null);
   const channelRef = useRef(null);
   const lastMessageRef = useRef(null);
+  const router = useRouter();
 
   const fetchMessages = async (lastId = null) => {
     setLoading(true);
@@ -31,7 +38,12 @@ export default function EventChat({ eventId, currentUser }) {
           user_id,
           message,
           created_at,
-          profiles (username, avatar_url)
+          profiles!user_id (
+            id,
+            username,
+            name,
+            avatar_url
+          )
         `)
         .eq('event_id', eventId)
         .order('created_at', { ascending: false })
@@ -47,8 +59,8 @@ export default function EventChat({ eventId, currentUser }) {
 
       const formattedMessages = data.map(msg => ({
         ...msg,
-        username: msg.profiles?.username || 'Usuario anónimo',
-        avatar_url: msg.profiles?.avatar_url || '/default-avatar.png'
+        username: msg.profiles?.username || msg.profiles?.name || 'Usuario anónimo',
+        avatar_url: msg.profiles?.avatar_url || null
       })).reverse();
 
       setMessages(prevMessages => {
@@ -59,32 +71,14 @@ export default function EventChat({ eventId, currentUser }) {
       });
       setHasMoreMessages(data.length === MESSAGES_PER_PAGE);
     } catch (error) {
-      console.error('Error fetching messages:', error.message);
+      console.error('Error al obtener mensajes:', error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchLastReadMessage = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('event_chat_read_status')
-        .select('last_read_message_id')
-        .eq('user_id', currentUser.id)
-        .eq('event_id', eventId)
-        .single();
-
-      if (error) throw error;
-
-      setLastReadMessageId(data?.last_read_message_id || null);
-    } catch (error) {
-      console.error('Error fetching last read message:', error.message);
-    }
-  };
-
   useEffect(() => {
     fetchMessages();
-    fetchLastReadMessage();
     
     channelRef.current = supabase.channel(`event_chat:${eventId}`);
     
@@ -97,7 +91,7 @@ export default function EventChat({ eventId, currentUser }) {
           filter: `event_id=eq.${eventId}`
         }, 
         async (payload) => {
-          console.log('New message received:', payload.new);
+          console.log('Nuevo mensaje recibido:', payload.new);
           
           const { data, error } = await supabase
             .from('event_chats')
@@ -106,20 +100,25 @@ export default function EventChat({ eventId, currentUser }) {
               user_id,
               message,
               created_at,
-              profiles (username, avatar_url)
+              profiles!user_id (
+                id,
+                username,
+                name,
+                avatar_url
+              )
             `)
             .eq('id', payload.new.id)
             .single();
 
           if (error) {
-            console.error('Error fetching new message details:', error);
+            console.error('Error al obtener detalles del nuevo mensaje:', error);
             return;
           }
 
           const newMessage = {
             ...data,
-            username: data.profiles?.username || 'Usuario anónimo',
-            avatar_url: data.profiles?.avatar_url || '/default-avatar.png'
+            username: data.profiles?.username || data.profiles?.name || 'Usuario anónimo',
+            avatar_url: data.profiles?.avatar_url || null
           };
 
           setMessages(prevMessages => {
@@ -131,32 +130,30 @@ export default function EventChat({ eventId, currentUser }) {
         }
       )
       .subscribe((status) => {
-        console.log('Subscription status:', status);
+        console.log('Estado de la suscripción:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to real-time changes.');
+          console.log('Suscrito exitosamente a cambios en tiempo real.');
         }
       });
 
     return () => {
-      console.log('Unsubscribing from channel');
+      console.log('Cancelando suscripción del canal');
       if (channelRef.current) {
         channelRef.current.unsubscribe();
       }
     };
-  }, [eventId, currentUser.id]);
+  }, [eventId]);
 
   useEffect(() => {
     if (scrollAreaRef.current && lastMessageRef.current) {
-      if (lastReadMessageId) {
-        const lastReadElement = document.getElementById(`message-${lastReadMessageId}`);
-        if (lastReadElement) {
-          lastReadElement.scrollIntoView({ behavior: 'smooth' });
-        }
-      } else {
+      const scrollArea = scrollAreaRef.current;
+      const isScrolledToBottom = scrollArea.scrollHeight - scrollArea.scrollTop === scrollArea.clientHeight;
+      
+      if (isScrolledToBottom || messages[messages.length - 1]?.user_id === currentUser.id) {
         lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
       }
     }
-  }, [messages, lastReadMessageId]);
+  }, [messages]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -175,29 +172,20 @@ export default function EventChat({ eventId, currentUser }) {
 
       if (error) throw error;
 
-      console.log('Message sent:', data);
+      console.log('Mensaje enviado:', data);
       setNewMessage('');
-      
-      // Update last read message
-      await supabase
-        .from('event_chat_read_status')
-        .upsert({
-          user_id: currentUser.id,
-          event_id: eventId,
-          last_read_message_id: data[0].id
-        });
-
-      setLastReadMessageId(data[0].id);
     } catch (error) {
-      console.error('Error sending message:', error.message);
+      console.error('Error al enviar mensaje:', error.message);
     } finally {
       setSending(false);
     }
   };
 
-  const loadMoreMessages = () => {
+  const loadMoreMessages = async () => {
     if (messages.length > 0) {
-      fetchMessages(messages[0].id);
+      setLoading(true);
+      await fetchMessages(messages[0].id);
+      setLoading(false);
     }
   };
 
@@ -223,7 +211,8 @@ export default function EventChat({ eventId, currentUser }) {
           <>
             {hasMoreMessages && (
               <div className="flex justify-center mb-4">
-                <Button onClick={loadMoreMessages} variant="outline" size="sm">
+                <Button onClick={loadMoreMessages} variant="outline" size="sm" disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
                   Cargar más mensajes
                 </Button>
               </div>
@@ -236,12 +225,26 @@ export default function EventChat({ eventId, currentUser }) {
                 ref={index === messages.length - 1 ? lastMessageRef : null}
               >
                 <div className={`flex max-w-[70%] ${message.user_id === currentUser?.id ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <Avatar className="w-10 h-10 mr-2">
-                    <AvatarImage src={message.avatar_url} alt={message.username} />
-                    <AvatarFallback>{message.username.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                  <Link href={`/profile/${message.user_id}`}>
+                    <Avatar className="w-10 h-10 mr-2 cursor-pointer">
+                      {message.avatar_url ? (
+                        <AvatarImage 
+                          src={message.avatar_url} 
+                          alt={message.username}
+                        />
+                      ) : (
+                        <AvatarFallback className="bg-purple-500 text-white">
+                          {getInitials(message.username)}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                  </Link>
                   <div className={`flex flex-col ${message.user_id === currentUser?.id ? 'items-end' : 'items-start'}`}>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">{message.username}</span>
+                    <Link href={`/profile/${message.user_id}`}>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mb-1 cursor-pointer hover:underline">
+                        {message.username}
+                      </span>
+                    </Link>
                     <div className={`p-3 rounded-lg ${
                       message.user_id === currentUser?.id
                         ? 'bg-purple-500 text-white'
@@ -262,8 +265,16 @@ export default function EventChat({ eventId, currentUser }) {
       <form onSubmit={sendMessage} className="border-t border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center space-x-2">
           <Avatar className="w-10 h-10">
-            <AvatarImage src={currentUser?.avatar_url} alt={currentUser?.username} />
-            <AvatarFallback>{currentUser?.username?.charAt(0).toUpperCase()}</AvatarFallback>
+            {currentUser?.user_metadata?.avatar_url ? (
+              <AvatarImage 
+                src={currentUser.user_metadata.avatar_url} 
+                alt={currentUser.email}
+              />
+            ) : (
+              <AvatarFallback className="bg-purple-500 text-white">
+                {getInitials(currentUser?.user_metadata?.username || currentUser?.email || 'U')}
+              </AvatarFallback>
+            )}
           </Avatar>
           <Input
             type="text"
@@ -280,3 +291,4 @@ export default function EventChat({ eventId, currentUser }) {
     </div>
   );
 }
+
