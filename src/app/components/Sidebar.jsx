@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Home, Calendar, User, MessageCircle, Settings, LogOut, PlusCircle } from 'lucide-react'
+import { Home, Calendar, User, MessageCircle, CalendarDays, LogOut, PlusCircle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useLogout from './logout'
 
@@ -12,8 +12,7 @@ export default function Sidebar() {
     { href: '/profile', icon: User, label: 'Perfil' },
     { href: '/chats', icon: MessageCircle, label: 'Chats' },
     { href: '/userevents', icon: Calendar, label: 'Mis Eventos' },
-    { href: '/events', icon: Calendar, label: 'Todos los Eventos' },
-    { href: '/settings', icon: Settings, label: 'Configuración' },
+    { href: '/events', icon: CalendarDays, label: 'Todos los Eventos' },
   ]
 
   return (
@@ -47,7 +46,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-4 mt-auto space-y-4 border-t border-white/10">
-        <Link href="/events/create" className="block">
+        <Link href="/create-event" className="block">
           <Button 
             className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 
                      hover:to-purple-600 text-white shadow-lg shadow-purple-500/20"
