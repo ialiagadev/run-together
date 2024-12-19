@@ -169,10 +169,10 @@ export default function ProfilePage() {
      setSuccess("Perfil actualizado correctamente")
      setTimeout(() => {
        router.push('/dashboard')
-     }, 2000)
+     }, 1000)
    } catch (error) {
-     console.error('Error al actualizar el perfil:', error)
-     setError('Error al actualizar el perfil: ' + error.message)
+     console.error('Por favor completa el perfil:', error)
+     setError('Por favor completa el perfil: ' + error.message)
    } finally {
      setLoading(false)
    }
