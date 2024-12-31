@@ -63,7 +63,7 @@ export default function SignUpForm() {
             <AlertTitle>Verifica tu correo electrónico</AlertTitle>
             <AlertDescription>
               Se ha enviado un correo de confirmación a {email} desde supabase. 
-              Por favor, verifica tu bandeja de entrada y sigue las instrucciones para activar tu cuenta.
+              Por favor, verifica tu bandeja de entrada y inicia sesión para activar tu cuenta.
             </AlertDescription>
           </Alert>
           <p className="text-center text-white mb-4">

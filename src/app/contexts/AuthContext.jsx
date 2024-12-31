@@ -9,6 +9,7 @@ const AuthContext = createContext()
 export function AuthProvider({ children }) {
  const [user, setUser] = useState(null)
  const [loading, setLoading] = useState(true)
+ const [unconfirmedEmail, setUnconfirmedEmail] = useState(null)
  const router = useRouter()
 
  useEffect(() => {
@@ -55,8 +56,19 @@ export function AuthProvider({ children }) {
 
  const signUp = async (data) => {
    try {
-     const { error: signUpError } = await supabase.auth.signUp(data)
+     const { data: signUpData, error: signUpError } = await supabase.auth.signUp(data)
      if (signUpError) throw signUpError
+
+     if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
+       // El email ya existe pero no está confirmado
+       setUnconfirmedEmail(data.email)
+       return { success: false, message: 'Este email ya está registrado pero no confirmado. Por favor, revisa tu bandeja de entrada y confirma tu email.' }
+     }
+
+     if (signUpData.user && !signUpData.user.confirmed_at) {
+       setUnconfirmedEmail(data.email)
+       return { success: true, message: 'Registro exitoso. Por favor, confirma tu email para continuar.' }
+     }
 
      const { data: { user }, error: userError } = await supabase.auth.getUser()
      if (userError) throw userError
@@ -75,6 +87,8 @@ export function AuthProvider({ children }) {
          }])
        if (profileError) throw profileError
      }
+
+     return { success: true, message: 'Registro exitoso.' }
    } catch (error) {
      console.error('Error in signUp:', error)
      throw error
@@ -114,7 +128,8 @@ export function AuthProvider({ children }) {
    signUp,
    signIn,
    signOut,
-   user
+   user,
+   unconfirmedEmail
  }
 
  return (
