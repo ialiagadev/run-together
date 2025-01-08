@@ -1,98 +1,118 @@
-'use client'
-
-import { motion } from "framer-motion"
-import { Calendar, MapPin, Users, MessageCircle, Loader2 } from 'lucide-react'
-import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Calendar, MapPin, Users, Globe, Lock } from 'lucide-react'
+import Link from 'next/link'
 
-export default function EventList({ events, joinedEvents, onJoinEvent, loading }) {
-  const formatEventDate = (date) => {
-    if (!date) return 'Por definir'
-    const eventDate = new Date(date)
-    if (isNaN(eventDate.getTime())) return 'Por definir'
-    return eventDate.toLocaleDateString('es-ES', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
-      </div>
-    )
-  }
-
-  if (events.length === 0) {
-    return (
-      <Card className="bg-black/60 border-white/20 backdrop-blur-md">
-        <CardContent className="flex flex-col items-center justify-center p-6">
-          <p className="text-white text-lg mb-4">
-            No hay eventos disponibles en este momento.
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
-
+export default function EventList({ events, userEventStatus, onJoinOrRequest, currentUser }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-      {events.map((event, index) => (
-        <motion.div
-          key={event.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.1 }}
-        >
-          <Card className="bg-black/60 border-white/20 backdrop-blur-md overflow-hidden hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300">
-            <CardHeader className="bg-purple-900/30 border-b border-white/10">
-              <CardTitle className="text-xl font-semibold text-white">{event.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="flex items-center text-purple-200 mb-2">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {events.map(event => (
+        <Card key={event.id} className="bg-black/60 border-white/20 backdrop-blur-md">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-white flex justify-between items-center">
+              {event.title}
+              {event.is_public ? (
+                <Globe className="text-green-500 h-5 w-5" />
+              ) : (
+                <Lock className="text-gray-400 h-5 w-5" />
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center text-purple-200">
                 <Calendar className="w-4 h-4 mr-2" />
-                <span>{formatEventDate(event.date)}</span>
+                <span>{new Date(event.date).toLocaleDateString()}</span>
               </div>
-              <div className="flex items-center text-purple-200 mb-2">
+              <div className="flex items-center text-purple-200">
                 <MapPin className="w-4 h-4 mr-2" />
                 <span>{event.location}</span>
               </div>
-              <div className="flex items-center text-purple-200 mb-4">
+              <div className="flex items-center text-purple-200">
                 <Users className="w-4 h-4 mr-2" />
-                <span>{event.max_participants ? `${event.max_participants} participantes máximo` : 'Sin límite de participantes'}</span>
+                <span>{event.is_public ? 'Público' : 'Privado'}</span>
               </div>
-              <p className="text-gray-300">{event.description?.slice(0, 100)}...</p>
-            </CardContent>
-            <CardFooter className="bg-purple-900/20 border-t border-white/10 flex justify-between">
-              <Link href={`/events/${event.id}`}>
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                  Ver detalles
-                </Button>
-              </Link>
-              {joinedEvents.includes(event.id) ? (
-                <Link href={`/events/${event.id}/chat`}>
-                  <Button className="bg-green-600 hover:bg-green-700 text-white">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Abrir chat
-                  </Button>
-                </Link>
-              ) : (
-                <Button 
-                  onClick={() => onJoinEvent(event.id)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  Unirse al evento
-                </Button>
-              )}
-            </CardFooter>
-          </Card>
-        </motion.div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-2">
+            <Link href={`/events/${event.id}`} className="w-full">
+              <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                Ver Detalles
+              </Button>
+            </Link>
+            {renderActionButton(event, userEventStatus, onJoinOrRequest, currentUser)}
+          </CardFooter>
+        </Card>
       ))}
     </div>
   )
 }
+
+function renderActionButton(event, userEventStatus, onJoinOrRequest, currentUser) {
+  if (!currentUser) {
+    return (
+      <Button className="w-full bg-gray-600" disabled>
+        Inicia sesión para unirte
+      </Button>
+    )
+  }
+
+  if (event.created_by === currentUser.id) {
+    return (
+      <Button className="w-full bg-gray-600" disabled>
+        Eres el creador
+      </Button>
+    )
+  }
+
+  const status = userEventStatus[event.id]
+
+  if (event.is_public) {
+    if (status === 'participant') {
+      return (
+        <Button className="w-full bg-green-600" disabled>
+          Ya eres participante
+        </Button>
+      )
+    }
+    return (
+      <Button 
+        className="w-full bg-green-600 hover:bg-green-700"
+        onClick={() => onJoinOrRequest(event.id, true)}
+      >
+        Unirse al evento
+      </Button>
+    )
+  } else {
+    switch (status) {
+      case 'pending':
+        return (
+          <Button className="w-full bg-yellow-600" disabled>
+            Solicitud Pendiente
+          </Button>
+        )
+      case 'accepted':
+        return (
+          <Button className="w-full bg-green-600" disabled>
+            Solicitud Aceptada
+          </Button>
+        )
+      case 'rejected':
+        return (
+          <Button className="w-full bg-red-600" disabled>
+            Solicitud Rechazada
+          </Button>
+        )
+      default:
+        return (
+          <Button 
+            className="w-full bg-purple-600 hover:bg-purple-700"
+            onClick={() => onJoinOrRequest(event.id, false)}
+          >
+            Solicitar Unirse
+          </Button>
+        )
+    }
+  }
+}
+

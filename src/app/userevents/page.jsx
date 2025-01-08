@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/contexts/AuthContext'
-import { MessageCircle, Calendar, MapPin, PlusCircle, Loader2 } from 'lucide-react'
+import { MessageCircle, Calendar, MapPin, PlusCircle, Loader2, Users } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
 import { Button } from "@/components/ui/button"
@@ -10,21 +10,23 @@ import EventSearch from '../components/EventSearch'
 
 export default function UserEventsPage() {
   const { user } = useAuth()
-  const [joinedEvents, setJoinedEvents] = useState([])
-  const [allJoinedEvents, setAllJoinedEvents] = useState([])
+  const [userEvents, setUserEvents] = useState([])
+  const [allUserEvents, setAllUserEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchResults, setSearchResults] = useState(null)
 
   useEffect(() => {
     if (user) {
-      fetchJoinedEvents()
+      fetchUserEvents()
     }
   }, [user])
 
-  async function fetchJoinedEvents() {
+  async function fetchUserEvents() {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      
+      // Fetch events the user has joined
+      const { data: joinedData, error: joinedError } = await supabase
         .from('event_participants')
         .select(`
           event_id,
@@ -33,17 +35,32 @@ export default function UserEventsPage() {
             title,
             date,
             location,
-            description
+            description,
+            created_by
           )
         `)
         .eq('user_id', user.id)
       
-      if (error) throw error
-      const events = data.map(item => item.events).filter(Boolean)
-      setJoinedEvents(events)
-      setAllJoinedEvents(events)
+      if (joinedError) throw joinedError
+      
+      // Fetch events the user has created
+      const { data: createdData, error: createdError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('created_by', user.id)
+      
+      if (createdError) throw createdError
+
+      // Combine and deduplicate events
+      const joinedEvents = joinedData.map(item => ({...item.events, isCreator: item.events.created_by === user.id}))
+      const createdEvents = createdData.map(event => ({...event, isCreator: true}))
+      const allEvents = [...joinedEvents, ...createdEvents]
+      const uniqueEvents = Array.from(new Map(allEvents.map(event => [event.id, event])).values())
+
+      setUserEvents(uniqueEvents)
+      setAllUserEvents(uniqueEvents)
     } catch (error) {
-      console.error('Error fetching joined events:', error)
+      console.error('Error fetching user events:', error)
     } finally {
       setLoading(false)
     }
@@ -53,7 +70,7 @@ export default function UserEventsPage() {
     setSearchResults(results)
   }
 
-  const displayEvents = searchResults || joinedEvents
+  const displayEvents = searchResults || userEvents
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
@@ -74,7 +91,7 @@ export default function UserEventsPage() {
           <EventSearch 
             onSearchResults={handleSearchResults}
             onReset={() => setSearchResults(null)}
-            allEvents={allJoinedEvents}
+            allEvents={allUserEvents}
             placeholder="Buscar en mis eventos..."
             buttonText="Buscar"
             className="w-full"
@@ -104,7 +121,11 @@ export default function UserEventsPage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-start sm:items-center gap-4">
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500/40 to-pink-500/40 border border-white/20 flex items-center justify-center shadow-inner">
-                      <Calendar className="h-6 w-6 text-purple-100" />
+                      {event.isCreator ? (
+                        <Users className="h-6 w-6 text-purple-100" />
+                      ) : (
+                        <Calendar className="h-6 w-6 text-purple-100" />
+                      )}
                     </div>
                     <div>
                       <h3 className="font-display text-white group-hover:text-purple-300 transition-colors">
@@ -133,7 +154,7 @@ export default function UserEventsPage() {
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <Link href={`/events/${event.id}`} className="w-full sm:w-auto">
                       <Button className="w-full sm:w-auto bg-purple-700/40 hover:bg-purple-600/50 text-white transition-all">
-                        Ver Detalles
+                        {event.isCreator ? 'Gestionar' : 'Ver Detalles'}
                       </Button>
                     </Link>
                     <Link href={`/events/${event.id}/chat`} className="w-full sm:w-auto">
@@ -152,3 +173,4 @@ export default function UserEventsPage() {
     </div>
   )
 }
+

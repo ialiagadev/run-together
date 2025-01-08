@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarIcon, MapPin } from "lucide-react"
+import { CalendarIcon, MapPin, Globe, Lock } from 'lucide-react'
 import { supabase } from "../lib/supabaseClient"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,6 +34,7 @@ export default function CreateEventForm() {
     title: "",
     location: "",
     description: "",
+    isPublic: true,
   })
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -50,6 +52,13 @@ export default function CreateEventForm() {
         return newErrors
       })
     }
+  }
+
+  const handleSwitchChange = (checked) => {
+    setFormData(prevData => ({
+      ...prevData,
+      isPublic: checked
+    }))
   }
 
   const validateForm = () => {
@@ -91,7 +100,8 @@ export default function CreateEventForm() {
               date: eventDateTime ? eventDateTime.toISOString() : null,
               location: formData.location,
               description: formData.description || null,
-              created_by: user.id
+              created_by: user.id,
+              is_public: formData.isPublic
             }
           ])
           .select()
@@ -99,6 +109,23 @@ export default function CreateEventForm() {
         if (error) throw error
 
         console.log('Event created successfully:', data)
+
+        // The creator is now automatically added as a participant due to the Supabase trigger
+        // We don't need to manually insert into event_participants
+
+        // Add a chat message to indicate the event creation
+        const { error: chatError } = await supabase
+          .from('event_chats')
+          .insert([
+            { 
+              event_id: data[0].id, 
+              user_id: user.id, 
+              message: `${user.email} ha creado el evento.` 
+            }
+          ])
+
+        if (chatError) throw chatError
+
         router.push("/dashboard")
       } catch (error) {
         console.error('Error creating event:', error)
@@ -125,8 +152,29 @@ export default function CreateEventForm() {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <Card className="bg-black/30 border-white/20 backdrop-blur-md">
-        <CardHeader>
+        <CardHeader className="flex justify-between items-center">
           <CardTitle className="text-2xl font-bold text-white">Crear Nuevo Evento</CardTitle>
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="isPublic" className="text-white font-semibold">
+              {formData.isPublic ? (
+                <>
+                  <Globe className="inline-block w-4 h-4 mr-2" />
+                  Público
+                </>
+              ) : (
+                <>
+                  <Lock className="inline-block w-4 h-4 mr-2" />
+                  Privado
+                </>
+              )}
+            </Label>
+            <Switch
+              id="isPublic"
+              checked={formData.isPublic}
+              onCheckedChange={handleSwitchChange}
+              className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-400"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -237,3 +285,4 @@ export default function CreateEventForm() {
     </div>
   )
 }
+

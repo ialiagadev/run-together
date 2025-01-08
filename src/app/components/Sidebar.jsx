@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Home, Calendar, User, MessageCircle, CalendarDays, LogOut, PlusCircle } from 'lucide-react'
+import { Home, Calendar, User, MessageCircle, Settings, LogOut, PlusCircle, CalendarDays, MessageSquare } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useLogout from './logout'
 
@@ -13,6 +13,10 @@ export default function Sidebar() {
     { href: '/chats', icon: MessageCircle, label: 'Chats' },
     { href: '/userevents', icon: Calendar, label: 'Mis Eventos' },
     { href: '/events', icon: CalendarDays, label: 'Todos los Eventos' },
+    { href: '/messages', icon: MessageSquare, label: 'Mensajes' },
+    { href: '/settings', icon: Settings, label: 'Configuración' },
+    { href: '/solicitudes', icon:Settings, label: 'solicudes' },
+
   ]
 
   return (
@@ -20,7 +24,7 @@ export default function Sidebar() {
       <div className="p-6 flex justify-center items-center">
         <Image
           src="/images/logo.png"
-          alt="SocialKM Logo"
+          alt="RunTogether Logo"
           width={150}
           height={50}
           className="object-contain"

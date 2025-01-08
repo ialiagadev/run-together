@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/contexts/AuthContext'
-import { MessageCircle, Calendar, MapPin, Route, ChevronRight } from 'lucide-react'
+import { MessageCircle, Calendar, MapPin, Route, ChevronRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '../lib/supabaseClient'
 import { Button } from "@/components/ui/button"
@@ -16,15 +16,19 @@ export default function Dashboard() {
   const [events, setEvents] = useState([])
   const [allEvents, setAllEvents] = useState([])
   const [joinedEvents, setJoinedEvents] = useState([])
+  const [pendingRequests, setPendingRequests] = useState([])
   const [searchResults, setSearchResults] = useState(null)
   const [totalEventCount, setTotalEventCount] = useState(0)
   const [username, setUsername] = useState('')
+  const [userLoaded, setUserLoaded] = useState(false)
 
   useEffect(() => {
     if (user) {
+      setUserLoaded(true)
       fetchEvents()
       fetchAllEvents()
       fetchJoinedEvents()
+      fetchPendingRequests()
       fetchUsername()
     }
   }, [user])
@@ -51,7 +55,7 @@ export default function Dashboard() {
         supabase.from('events').select('id', { count: 'exact', head: true }),
         supabase
           .from('events')
-          .select('*')
+          .select('*, created_by')
           .limit(MAX_DISPLAY_EVENTS)
       ])
       
@@ -66,7 +70,7 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select('*, created_by')
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -99,44 +103,73 @@ export default function Dashboard() {
     }
   }
 
+  async function fetchPendingRequests() {
+    try {
+      const { data, error } = await supabase
+        .from('event_requests')
+        .select('event_id')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+
+      if (error) throw error
+      setPendingRequests(data.map(item => item.event_id))
+    } catch (error) {
+      console.error('Error fetching pending requests:', error)
+    }
+  }
+
   async function joinEvent(eventId) {
-    if (joinedEvents.some(event => event.id === eventId)) {
+    const event = allEvents.find(e => e.id === eventId);
+    if (!event) return;
+
+    if (joinedEvents.some(e => e.id === eventId) || pendingRequests.includes(eventId)) {
       return;
     }
 
     try {
-      const { data, error } = await supabase
-        .from('event_participants')
-        .insert([
-          { event_id: eventId, user_id: user.id }
-        ])
-      
-      if (error) throw error
+      if (event.is_public) {
+        const { data, error } = await supabase
+          .from('event_participants')
+          .insert([
+            { event_id: eventId, user_id: user.id }
+          ])
+        
+        if (error) throw error
 
-      const { error: chatError } = await supabase
-        .from('event_chats')
-        .insert([
-          { 
-            event_id: eventId, 
-            user_id: user.id, 
-            message: `${username} se ha unido al evento.` 
-          }
-        ])
+        const { error: chatError } = await supabase
+          .from('event_chats')
+          .insert([
+            { 
+              event_id: eventId, 
+              user_id: user.id, 
+              message: `${username} se ha unido al evento.` 
+            }
+          ])
 
-      if (chatError) throw chatError
+        if (chatError) throw chatError
 
-      // Actualizar el estado local inmediatamente
-      const joinedEvent = allEvents.find(event => event.id === eventId)
-      if (joinedEvent) {
-        setJoinedEvents(prevJoinedEvents => [...prevJoinedEvents, joinedEvent])
+        // Actualizar el estado local inmediatamente
+        setJoinedEvents(prevJoinedEvents => [...prevJoinedEvents, event])
+      } else {
+        // Para eventos privados, enviar una solicitud
+        const { error } = await supabase
+          .from('event_requests')
+          .insert([
+            { event_id: eventId, user_id: user.id, status: 'pending' }
+          ])
+
+        if (error) throw error
+
+        // Actualizar el estado local de solicitudes pendientes
+        setPendingRequests(prev => [...prev, eventId])
       }
 
       // Actualizar el estado de eventos si es necesario
       setEvents(prevEvents => 
-        prevEvents.map(event => 
-          event.id === eventId 
-            ? { ...event, participants: (event.participants || 0) + 1 }
-            : event
+        prevEvents.map(e => 
+          e.id === eventId 
+            ? { ...e, participants: e.is_public ? (e.participants || 0) + 1 : e.participants }
+            : e
         )
       )
     } catch (error) {
@@ -149,6 +182,14 @@ export default function Dashboard() {
   }
 
   const displayEvents = searchResults || events
+
+  if (!userLoaded) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
@@ -177,6 +218,7 @@ export default function Dashboard() {
             <div className="space-y-4">
               {displayEvents.slice(0, searchResults ? displayEvents.length : MAX_DISPLAY_EVENTS).map((event) => {
                 const isParticipant = joinedEvents.some(je => je.id === event.id);
+                const hasPendingRequest = pendingRequests.includes(event.id);
                 return (
                   <div 
                     key={event.id}
@@ -211,17 +253,31 @@ export default function Dashboard() {
                       </div>
                       <Button
                         onClick={() => joinEvent(event.id)}
-                        disabled={isParticipant}
+                        disabled={isParticipant || hasPendingRequest || event.created_by === user?.id}
                         variant={isParticipant ? "secondary" : "default"}
                         className={`
                           transition-all w-full sm:w-auto
                           ${isParticipant 
                             ? 'bg-purple-700/40 text-white hover:bg-purple-600/50' 
-                            : 'bg-purple-600/80 hover:bg-purple-700/90 text-white'
+                            : event.created_by === user?.id
+                              ? 'bg-purple-600/80 text-white'
+                              : hasPendingRequest
+                                ? 'bg-yellow-600/80 text-white'
+                                : event.is_public
+                                  ? 'bg-purple-600/80 hover:bg-purple-700/90 text-white'
+                                  : 'bg-blue-600/80 hover:bg-blue-700/90 text-white'
                           }
                         `}
                       >
-                        {isParticipant ? 'Ya participas' : 'Unirse'}
+                        {isParticipant 
+                          ? 'Ya participas' 
+                          : event.created_by === user?.id
+                            ? 'Eres el creador'
+                            : hasPendingRequest
+                              ? 'Pendiente'
+                              : event.is_public 
+                                ? 'Unirse' 
+                                : 'Enviar Solicitud'}
                       </Button>
                     </div>
                   </div>
@@ -303,3 +359,4 @@ export default function Dashboard() {
     </div>
   )
 }
+
