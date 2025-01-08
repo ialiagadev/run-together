@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Calendar, MapPin } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Check, X } from 'lucide-react'
 
 export default function SolicitudesPage() {
   const { user } = useAuth()
@@ -38,6 +38,7 @@ export default function SolicitudesPage() {
             location
           )
         `)
+        .eq('status', 'pending')  // Solo seleccionar solicitudes pendientes
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -69,38 +70,34 @@ export default function SolicitudesPage() {
 
   async function handleRequest(requestId, status) {
     try {
-      // Primero, actualizamos el estado de la solicitud
       const { error: updateError } = await supabase
         .from('event_requests')
         .update({ status })
         .eq('id', requestId)
-  
+
       if (updateError) throw updateError
       
       if (status === 'accepted') {
         const request = requests.find(r => r.id === requestId)
         if (request) {
-          // Luego, añadimos al participante
-          const { data, error: participantError } = await supabase
+          const { error: participantError } = await supabase
             .from('event_participants')
             .insert({ 
               event_id: request.event_id, 
               user_id: request.user_id 
             })
-            .select()
-          
+        
           if (participantError) {
             console.error('Error adding participant:', participantError)
             setMessage('La solicitud fue aceptada, pero hubo un problema al añadir al participante.')
             return
           }
-  
-          console.log('Participant added:', data)
         }
       }
-  
+
       setMessage(status === 'accepted' ? 'Solicitud aceptada' : 'Solicitud rechazada')
-      fetchRequests()
+      // Eliminar la solicitud del estado local
+      setRequests(prevRequests => prevRequests.filter(r => r.id !== requestId))
     } catch (error) {
       console.error('Error updating request:', error)
       setMessage('No se pudo procesar la solicitud. Por favor, intenta de nuevo.')
@@ -159,20 +156,22 @@ export default function SolicitudesPage() {
                   </div>
                 </div>
                 {request.status === 'pending' ? (
-                  <div>
-                    <Button 
-                      onClick={() => handleRequest(request.id, 'accepted')}
-                      className="bg-green-600 hover:bg-green-700 text-white mr-2"
-                    >
-                      Aceptar
-                    </Button>
-                    <Button 
-                      onClick={() => handleRequest(request.id, 'rejected')}
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      Rechazar
-                    </Button>
-                  </div>
+                  <div className="flex items-center space-x-12">
+                  <Button 
+                    onClick={() => handleRequest(request.id, 'accepted')}
+                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 p-3.5 rounded-full transition-all duration-300 shadow-sm hover:shadow-indigo-100/50 border-2 border-indigo-200/50 hover:border-indigo-300"
+                    aria-label="Aceptar solicitud"
+                  >
+                    <Check className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    onClick={() => handleRequest(request.id, 'rejected')}
+                    className="bg-violet-50 hover:bg-violet-100 text-violet-600 p-3.5 rounded-full transition-all duration-300 shadow-sm hover:shadow-violet-100/50 border-2 border-violet-200/50 hover:border-violet-300"
+                    aria-label="Rechazar solicitud"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
                 ) : (
                   <span className={`text-lg font-semibold ${
                     request.status === 'accepted' ? 'text-green-500' : 'text-red-500'
