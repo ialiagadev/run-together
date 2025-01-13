@@ -6,6 +6,7 @@ import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 import { Menu, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { BottomNav } from './Bottomnav'
 
 export default function ClientLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -120,16 +121,20 @@ export default function ClientLayout({ children }) {
           </header>
 
           {/* Page content */}
-          <main className="flex-1 overflow-x-hidden overflow-y-auto">
+          <main className="flex-1 overflow-x-hidden overflow-y-auto pb-16 md:pb-0">
             {children}
           </main>
 
           {/* Footer */}
           <footer className="py-4 text-center text-sm text-gray-500 bg-black/60 backdrop-blur-xl">
-            © {new Date().getFullYear()}SocialKM. Todos los derechos reservados.
+            © {new Date().getFullYear()} RunTogether. Todos los derechos reservados.
           </footer>
+
+          {/* Añadir BottomNav aquí */}
+          {!isPublicPage && <BottomNav />}
         </div>
       </div>
     </div>
   )
 }
+

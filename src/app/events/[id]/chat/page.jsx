@@ -9,7 +9,7 @@ import EventChat from '@/app/components/EvenChat'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Info, Users, ArrowLeft } from 'lucide-react'
+import { Info, Users, ArrowLeft, Phone, Video } from 'lucide-react'
 
 export default function EventChatPage() {
   const { id: eventId } = useParams()
@@ -61,8 +61,8 @@ export default function EventChatPage() {
 
   if (!user || !event) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-purple-900/50 to-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-400"></div>
+      <div className="flex items-center justify-center h-screen bg-[#1a1c2b]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4957e6]"></div>
       </div>
     )
   }
@@ -73,36 +73,46 @@ export default function EventChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-purple-900/50 to-black">
+    <div className="flex flex-col h-screen bg-[#1a1c2b]">
       <Sheet>
         <SheetTrigger asChild>
-          <header className="bg-purple-600 shadow-lg sticky top-0 z-30 cursor-pointer">
-            <div className="h-16 px-4 flex items-center justify-between relative">
+          <header className="bg-[#2d2f3e] shadow-md sticky top-0 z-30">
+            <div className="h-16 px-4 flex items-center justify-between">
               <button 
                 onClick={handleBackClick}
-                className="absolute left-4 text-white/80 hover:text-white transition-colors"
+                className="text-white/80 hover:text-white transition-colors"
               >
                 <ArrowLeft className="h-6 w-6" />
               </button>
               
-              <div className="flex items-center justify-center w-full gap-4">
-                <Avatar className="h-10 w-10 ring-2 ring-white/20">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-8 w-8">
                   <AvatarImage src={event.image_url} alt={event.title} />
-                  <AvatarFallback className="bg-purple-700 text-white">
+                  <AvatarFallback className="bg-[#4957e6] text-white">
                     {event.title[0]}
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="flex flex-col items-center min-w-0">
-                  <h1 className="text-lg font-medium text-white truncate max-w-[200px] sm:max-w-[300px]">
+                <div className="flex flex-col">
+                  <h1 className="text-lg font-medium text-white truncate max-w-[180px] sm:max-w-[240px]">
                     {event.title}
                   </h1>
-                  <p className="text-sm text-white/80">
+                  <p className="text-xs text-white/60">
                     {participants.length} participantes
                   </p>
                 </div>
+              </div>
 
-                <Info className="h-5 w-5 text-white/80" />
+              <div className="flex items-center space-x-4">
+                <button className="text-white/80 hover:text-white transition-colors">
+                  <Phone className="h-5 w-5" />
+                </button>
+                <button className="text-white/80 hover:text-white transition-colors">
+                  <Video className="h-5 w-5" />
+                </button>
+                <button className="text-white/80 hover:text-white transition-colors">
+                  <Info className="h-5 w-5" />
+                </button>
               </div>
             </div>
           </header>
@@ -110,40 +120,31 @@ export default function EventChatPage() {
 
         <SheetContent 
           side="right" 
-          className="w-full sm:w-[400px] bg-purple-900/90 backdrop-blur-md text-white border-l border-purple-500/30"
+          className="w-full sm:w-[400px] bg-[#2d2f3e] text-white border-l border-white/10"
         >
-          <SheetHeader className="text-center pb-6">
-            <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-purple-400">
-              <AvatarImage src={event.image_url} alt={event.title} />
-              <AvatarFallback className="bg-purple-700 text-white text-2xl">
-                {event.title[0]}
-              </AvatarFallback>
-            </Avatar>
+          <SheetHeader className="text-left space-y-4 pb-6">
             <SheetTitle className="text-2xl font-bold text-white">
-              {event.title}
+              Información del evento
             </SheetTitle>
-            <p className="text-sm text-white/80">
-              Creado el {new Date(event.created_at).toLocaleDateString('es-ES')}
-            </p>
           </SheetHeader>
 
-          <ScrollArea className="h-[calc(100vh-200px)] pr-4">
+          <ScrollArea className="h-[calc(100vh-100px)] pr-4">
             <div className="space-y-6">
               {event.description && (
-                <div>
-                  <h3 className="text-sm font-medium text-white/80 mb-2">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-white/70">
                     Descripción
                   </h3>
-                  <p className="text-sm text-white">
+                  <p className="text-sm text-white/90 leading-relaxed">
                     {event.description}
                   </p>
                 </div>
               )}
 
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Users className="h-5 w-5 text-white/80" />
-                  <h3 className="text-sm font-medium text-white/80">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-white/70" />
+                  <h3 className="text-sm font-medium text-white/70">
                     Participantes ({participants.length})
                   </h3>
                 </div>
@@ -153,11 +154,11 @@ export default function EventChatPage() {
                     <Link
                       key={participant.id}
                       href={`/profile/${participant.id}`}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors block"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
                     >
-                      <Avatar>
+                      <Avatar className="h-10 w-10">
                         <AvatarImage src={participant.avatar_url} />
-                        <AvatarFallback className="bg-purple-700 text-white">
+                        <AvatarFallback className="bg-[#4957e6] text-white">
                           {participant.username?.[0].toUpperCase() ?? '?'}
                         </AvatarFallback>
                       </Avatar>
@@ -166,7 +167,7 @@ export default function EventChatPage() {
                           {participant.username || 'Usuario anónimo'}
                         </p>
                         {participant.id === user.id && (
-                          <span className="text-xs text-white/60">(Tú)</span>
+                          <span className="text-xs text-white/60">Tú</span>
                         )}
                       </div>
                     </Link>

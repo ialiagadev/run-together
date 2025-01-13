@@ -1,31 +1,34 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
+import React, { useState, useEffect, useRef } from 'react'
+import { useParams } from 'next/navigation'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { supabase } from '@/app/lib/supabaseClient'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Send, ArrowLeft } from 'lucide-react'
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Loader2, Send, Paperclip, Smile } from 'lucide-react'
 
 export default function ConversationPage() {
   const { userId } = useParams()
   const { user } = useAuth()
-  const router = useRouter()
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
   const [otherUser, setOtherUser] = useState(null)
-  const messagesEndRef = useRef(null)
+  const scrollAreaRef = useRef(null)
+  const lastMessageRef = useRef(null)
 
   useEffect(() => {
     if (user && userId) {
       fetchMessages()
       fetchOtherUser()
-      subscribeToMessages()
+      const unsubscribe = subscribeToMessages()
+      return () => {
+        unsubscribe()
+      }
     }
   }, [user, userId])
 
@@ -34,6 +37,7 @@ export default function ConversationPage() {
   }, [messages])
 
   const fetchMessages = async () => {
+    if (!user) return
     try {
       setLoading(true)
       const { data, error } = await supabase
@@ -60,6 +64,7 @@ export default function ConversationPage() {
   }
 
   const fetchOtherUser = async () => {
+    if (!userId) return
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -75,6 +80,7 @@ export default function ConversationPage() {
   }
 
   const subscribeToMessages = () => {
+    if (!user) return () => {}
     const channel = supabase
       .channel('private-messages')
       .on('postgres_changes', 
@@ -99,8 +105,9 @@ export default function ConversationPage() {
 
   const sendMessage = async (e) => {
     e.preventDefault()
-    if (!newMessage.trim()) return
+    if (!newMessage.trim() || !user) return
 
+    setSending(true)
     try {
       const { data, error } = await supabase
         .from('mensajes_privados')
@@ -125,83 +132,164 @@ export default function ConversationPage() {
       setNewMessage('')
     } catch (error) {
       console.error('Error sending message:', error)
+    } finally {
+      setSending(false)
     }
   }
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    if (scrollAreaRef.current && lastMessageRef.current) {
+      const scrollArea = scrollAreaRef.current;
+      const isScrolledToBottom = scrollArea.scrollHeight - scrollArea.scrollTop === scrollArea.clientHeight;
+      
+      if (isScrolledToBottom || messages[messages.length - 1]?.id_remitente === user?.id) {
+        lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   }
 
-  if (loading) {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('es-ES', { 
+      hour: '2-digit', 
+      minute: '2-digit'
+    });
+  };
+
+  const shouldShowDate = (currentMsg, prevMsg) => {
+    if (!prevMsg) return true;
+    const currentDate = new Date(currentMsg.fecha_creacion).toDateString();
+    const prevDate = new Date(prevMsg.fecha_creacion).toDateString();
+    return currentDate !== prevDate;
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.charAt(0).toUpperCase();
+  };
+
+  if (!user || !userId) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-purple-900/50 to-black">
-        <Loader2 className="h-12 w-12 animate-spin text-purple-400" />
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-300" />
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto p-4 h-screen flex flex-col bg-gradient-to-br from-purple-900/50 to-black">
-      <Card className="flex-1 overflow-hidden flex flex-col bg-black/60 border-purple-500/20 backdrop-blur-md">
-        <CardHeader className="bg-purple-900/30 border-b border-purple-500/20">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="mr-2 text-white"
-              onClick={() => router.push('/messages')}
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <Link href={`/profile/${otherUser?.id}`}>
-              <Avatar className="h-10 w-10 mr-2">
-                <AvatarImage src={otherUser?.avatar_url} />
-                <AvatarFallback className="bg-purple-600 text-white">
-                  {otherUser?.username?.[0].toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
-            <CardTitle className="text-xl text-white">{otherUser?.username}</CardTitle>
+    <div className="flex flex-col h-[calc(100vh-4rem)] relative overflow-hidden bg-[#0a0a1f]">
+      {/* Fondo de cielo estrellado */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPgogIDxkZWZzPgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJzdGFyIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiIGZ4PSI1MCUiIGZ5PSI1MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmZmZmZmIiBzdG9wLW9wYWNpdHk9IjEiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZmZmZmZmIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMWYiLz4KICA8ZyBmaWxsPSJ1cmwoI3N0YXIpIj4KICAgIDxjaXJjbGUgY3g9IjUwJSIgY3k9IjUwJSIgcj0iMXB4IiBvcGFjaXR5PSIwLjMiLz4KICAgIDxjaXJjbGUgY3g9IjIwJSIgY3k9IjMwJSIgcj0iMXB4IiBvcGFjaXR5PSIwLjMiLz4KICAgIDxjaXJjbGUgY3g9IjgwJSIgY3k9IjcwJSIgcj0iMXB4IiBvcGFjaXR5PSIwLjMiLz4KICAgIDxjaXJjbGUgY3g9IjEwJSIgY3k9IjEwJSIgcj0iMXB4IiBvcGFjaXR5PSIwLjMiLz4KICAgIDxjaXJjbGUgY3g9IjkwJSIgY3k9IjkwJSIgcj0iMXB4IiBvcGFjaXR5PSIwLjMiLz4KICAgIDxjaXJjbGUgY3g9IjMwJSIgY3k9IjcwJSIgcj0iMXB4IiBvcGFjaXR5PSIwLjMiLz4KICAgIDxjaXJjbGUgY3g9IjcwJSIgY3k9IjMwJSIgcj0iMXB4IiBvcGFjaXR5PSIwLjMiLz4KICAgIDxjaXJjbGUgY3g9IjQwJSIgY3k9IjIwJSIgcj0iMXB4IiBvcGFjaXR5PSIwLjMiLz4KICAgIDxjaXJjbGUgY3g9IjYwJSIgY3k9IjgwJSIgcj0iMXB4IiBvcGFjaXR5PSIwLjMiLz4KICA8L2c+Cjwvc3ZnPg==')] opacity-50"></div>
+      
+      {/* Aurora boreal */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1a4a5e] to-transparent opacity-20 animate-pulse"></div>
+
+      {/* Header */}
+      <div className="relative z-10 px-4 py-3 bg-cyan-950/50 backdrop-blur-sm border-b border-cyan-800/50 flex justify-center items-center">
+        <div className="flex items-center space-x-3">
+          <Avatar className="w-10 h-10 border-2 border-cyan-500/30">
+            {otherUser?.avatar_url ? (
+              <AvatarImage src={otherUser.avatar_url} alt={otherUser.username} />
+            ) : (
+              <AvatarFallback className="bg-cyan-800 text-cyan-200">
+                {otherUser?.username?.[0]?.toUpperCase() || '?'}
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <div>
+            <h2 className="text-cyan-100 font-medium">{otherUser?.username}</h2>
           </div>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div key={message.id} className={`flex ${message.id_remitente === user.id ? 'justify-end' : 'justify-start'}`}>
-              <div className={`flex items-start space-x-2 max-w-[70%] ${message.id_remitente === user.id ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                <Link href={`/profile/${message.id_remitente}`}>
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={message.id_remitente === user.id ? user.user_metadata.avatar_url : otherUser?.avatar_url} />
-                    <AvatarFallback className="bg-purple-600 text-white">
-                      {message.id_remitente === user.id ? user.email[0].toUpperCase() : otherUser?.username[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
-                <div className={`rounded-lg p-3 ${message.id_remitente === user.id ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-100'}`}>
-                  <p>{message.contenido}</p>
-                  <span className="text-xs opacity-50 mt-1 block">
-                    {new Date(message.fecha_creacion).toLocaleString()}
+        </div>
+      </div>
+
+      <ScrollArea ref={scrollAreaRef} className="flex-grow px-4 py-6 bg-transparent relative z-10">
+        {messages.map((message, index) => {
+          const isCurrentUser = message.id_remitente === user.id;
+          const showAvatar = index === 0 || messages[index - 1].id_remitente !== message.id_remitente;
+          const showDate = shouldShowDate(message, messages[index - 1]);
+          
+          return (
+            <React.Fragment key={`${message.id}-${message.fecha_creacion}`}>
+              {showDate && (
+                <div className="flex justify-center my-4">
+                  <span className="bg-cyan-900/50 text-cyan-200 text-xs px-2 py-1 rounded-full">
+                    {formatDate(message.fecha_creacion)}
                   </span>
                 </div>
+              )}
+              <div
+                className={`flex mb-2 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                ref={index === messages.length - 1 ? lastMessageRef : null}
+              >
+                <div className={`flex max-w-[70%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} items-end`}>
+                  <div className="w-8 flex-shrink-0 mr-2">
+                    {!isCurrentUser && showAvatar ? (
+                      <Avatar className="w-8 h-8 border-2 border-cyan-500/30">
+                        {otherUser?.avatar_url ? (
+                          <AvatarImage src={otherUser.avatar_url} alt={otherUser.username} />
+                        ) : (
+                          <AvatarFallback className="bg-cyan-800 text-cyan-200">
+                            {getInitials(otherUser?.username)}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                    ) : null}
+                  </div>
+                  <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'} flex-grow`}>
+                    {showAvatar && (
+                      <span className={`text-xs font-medium mb-1 ${
+                        isCurrentUser ? 'text-purple-300' : 'text-cyan-600'
+                      }`}>
+                        {isCurrentUser ? 'Tú' : otherUser?.username}
+                      </span>
+                    )}
+                    <div className={`px-4 py-2 rounded-2xl ${
+                      isCurrentUser
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white text-gray-800'
+                    } shadow-lg transition-all duration-200 hover:shadow-xl backdrop-blur-sm`}>
+                      <p className="text-sm leading-relaxed">{message.contenido}</p>
+                    </div>
+                    <span className="text-[10px] text-cyan-400 mt-1">
+                      {formatTime(message.fecha_creacion)}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </CardContent>
-        <CardContent className="p-4 bg-purple-900/20 border-t border-purple-500/20">
-          <form onSubmit={sendMessage} className="flex space-x-2">
-            <Input
-              type="text"
-              placeholder="Escribe un mensaje..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1 bg-black/40 border-purple-500/30 text-white placeholder-gray-400"
-            />
-            <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white">
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            </React.Fragment>
+          );
+        })}
+      </ScrollArea>
+      <form onSubmit={sendMessage} className="p-4 bg-[#0a0a1f]/80 backdrop-blur-sm border-t border-cyan-900/50">
+        <div className="flex items-center space-x-2">
+          <Button type="button" variant="ghost" size="icon" className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30">
+            <Paperclip className="h-5 w-5" />
+          </Button>
+          <Input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Escribe un mensaje..."
+            className="flex-1 bg-cyan-950/30 border-cyan-800/50 text-cyan-100 placeholder-cyan-400 focus:ring-cyan-500 focus:border-cyan-500"
+          />
+          <Button type="button" variant="ghost" size="icon" className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30">
+            <Smile className="h-5 w-5" />
+          </Button>
+          <Button type="submit" disabled={sending || !newMessage.trim()} className="bg-cyan-600 hover:bg-cyan-700 text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+          </Button>
+        </div>
+      </form>
     </div>
   )
 }
