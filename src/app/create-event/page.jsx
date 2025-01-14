@@ -172,7 +172,7 @@ export default function CreateEventForm() {
               id="isPublic"
               checked={formData.isPublic}
               onCheckedChange={handleSwitchChange}
-              className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-400"
+              className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-yellow-400"
             />
           </div>
         </CardHeader>
