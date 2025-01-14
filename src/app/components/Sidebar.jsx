@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Home, Calendar, User, MessageCircle, Settings, LogOut, PlusCircle, CalendarDays, MessageSquare } from 'lucide-react'
+import { Home, Calendar, User, MessageCircle, Settings, LogOut, PlusCircle, CalendarDays, MessageSquare, UserPlus } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useLogout from './logout'
 
@@ -14,8 +14,7 @@ export default function Sidebar() {
     { href: '/userevents', icon: Calendar, label: 'Mis Eventos' },
     { href: '/events', icon: CalendarDays, label: 'Todos los Eventos' },
     { href: '/messages', icon: MessageSquare, label: 'Mensajes' },
-    { href: '/settings', icon: Settings, label: 'Configuración' },
-    { href: '/solicitudes', icon:Settings, label: 'solicudes' },
+    { href: '/solicitudes', icon:UserPlus, label: 'solicudes' },
 
   ]
 
