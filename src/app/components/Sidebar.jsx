@@ -1,11 +1,37 @@
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Home, Calendar, User, MessageCircle, Settings, LogOut, PlusCircle, CalendarDays, MessageSquare, UserPlus } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import useLogout from './logout'
+import { supabase } from '@/app/lib/supabaseClient'
+import { useAuth } from '@/app/contexts/AuthContext'
 
 export default function Sidebar() {
   const handleLogout = useLogout()
+  const { user } = useAuth()
+  const [pendingRequests, setPendingRequests] = useState(0)
+
+  useEffect(() => {
+    if (user) {
+      fetchPendingRequests()
+    }
+  }, [user])
+
+  const fetchPendingRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('event_requests')
+        .select('id', { count: 'exact' })
+        .eq('status', 'pending')
+
+      if (error) throw error
+      setPendingRequests(data.length)
+    } catch (error) {
+      console.error('Error fetching pending requests:', error)
+    }
+  }
 
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Inicio' },
@@ -14,8 +40,7 @@ export default function Sidebar() {
     { href: '/userevents', icon: Calendar, label: 'Mis Eventos' },
     { href: '/events', icon: CalendarDays, label: 'Todos los Eventos' },
     { href: '/messages', icon: MessageSquare, label: 'Mensajes' },
-    { href: '/solicitudes', icon:UserPlus, label: 'solicudes' },
-
+    { href: '/solicitudes', icon: UserPlus, label: 'Solicitudes', badge: pendingRequests },
   ]
 
   return (
@@ -36,13 +61,20 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-gray-300 
+              className="flex items-center justify-between gap-3 px-3 py-2 text-sm rounded-lg text-gray-300 
                        hover:text-white hover:bg-purple-500/20 transition-colors group"
             >
-              <div className="p-1 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/30 transition-colors">
-                <item.icon className="h-5 w-5" />
+              <div className="flex items-center gap-3">
+                <div className="p-1 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/30 transition-colors">
+                  <item.icon className="h-5 w-5" />
+                </div>
+                <span>{item.label}</span>
               </div>
-              <span>{item.label}</span>
+              {item.badge > 0 && (
+                <Badge variant="destructive" className="bg-red-500 text-white">
+                  {item.badge}
+                </Badge>
+              )}
             </Link>
           ))}
         </div>
