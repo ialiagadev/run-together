@@ -23,6 +23,17 @@ export default function SolicitudesPage() {
   async function fetchRequests() {
     try {
       setLoading(true)
+      // Primero, obtenemos los eventos creados por el usuario actual
+      const { data: userEvents, error: userEventsError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('created_by', user.id)
+
+      if (userEventsError) throw userEventsError
+
+      const userEventIds = userEvents.map(event => event.id)
+
+      // Luego, obtenemos las solicitudes para esos eventos
       const { data, error } = await supabase
         .from('event_requests')
         .select(`
@@ -38,7 +49,8 @@ export default function SolicitudesPage() {
             location
           )
         `)
-        .eq('status', 'pending')  // Solo seleccionar solicitudes pendientes
+        .in('event_id', userEventIds)
+        .eq('status', 'pending')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -103,8 +115,6 @@ export default function SolicitudesPage() {
       setMessage('No se pudo procesar la solicitud. Por favor, intenta de nuevo.')
     }
   }
-  
-  
 
   if (loading) {
     return (
@@ -125,7 +135,7 @@ export default function SolicitudesPage() {
       {requests.length === 0 ? (
         <Card className="bg-black/60 border-white/20 backdrop-blur-md">
           <CardContent className="p-6">
-            <p className="text-white text-lg">No hay solicitudes pendientes.</p>
+            <p className="text-white text-lg">No hay solicitudes pendientes para tus eventos.</p>
           </CardContent>
         </Card>
       ) : (
@@ -155,29 +165,23 @@ export default function SolicitudesPage() {
                     </div>
                   </div>
                 </div>
-                {request.status === 'pending' ? (
+                {request.status === 'pending' && (
                   <div className="flex items-center space-x-12">
-                  <Button 
-                    onClick={() => handleRequest(request.id, 'accepted')}
-                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 p-3.5 rounded-full transition-all duration-300 shadow-sm hover:shadow-indigo-100/50 border-2 border-indigo-200/50 hover:border-indigo-300"
-                    aria-label="Aceptar solicitud"
-                  >
-                    <Check className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    onClick={() => handleRequest(request.id, 'rejected')}
-                    className="bg-violet-50 hover:bg-violet-100 text-violet-600 p-3.5 rounded-full transition-all duration-300 shadow-sm hover:shadow-violet-100/50 border-2 border-violet-200/50 hover:border-violet-300"
-                    aria-label="Rechazar solicitud"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
-                ) : (
-                  <span className={`text-lg font-semibold ${
-                    request.status === 'accepted' ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    {request.status === 'accepted' ? 'Aceptada' : 'Rechazada'}
-                  </span>
+                    <Button 
+                      onClick={() => handleRequest(request.id, 'accepted')}
+                      className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 p-3.5 rounded-full transition-all duration-300 shadow-sm hover:shadow-indigo-100/50 border-2 border-indigo-200/50 hover:border-indigo-300"
+                      aria-label="Aceptar solicitud"
+                    >
+                      <Check className="h-5 w-5" />
+                    </Button>
+                    <Button 
+                      onClick={() => handleRequest(request.id, 'rejected')}
+                      className="bg-violet-50 hover:bg-violet-100 text-violet-600 p-3.5 rounded-full transition-all duration-300 shadow-sm hover:shadow-violet-100/50 border-2 border-violet-200/50 hover:border-violet-300"
+                      aria-label="Rechazar solicitud"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardContent>

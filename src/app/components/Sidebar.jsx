@@ -21,13 +21,25 @@ export default function Sidebar() {
 
   const fetchPendingRequests = async () => {
     try {
-      const { data, error } = await supabase
+      // Primero, obtenemos los eventos creados por el usuario actual
+      const { data: userEvents, error: userEventsError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('created_by', user.id)
+
+      if (userEventsError) throw userEventsError
+
+      const userEventIds = userEvents.map(event => event.id)
+
+      // Luego, contamos las solicitudes pendientes para esos eventos
+      const { count, error } = await supabase
         .from('event_requests')
         .select('id', { count: 'exact' })
+        .in('event_id', userEventIds)
         .eq('status', 'pending')
 
       if (error) throw error
-      setPendingRequests(data.length)
+      setPendingRequests(count)
     } catch (error) {
       console.error('Error fetching pending requests:', error)
     }
