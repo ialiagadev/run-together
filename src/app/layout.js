@@ -6,7 +6,7 @@ import ClientLayout from './components/ClientLayout'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'RunTogether',
+  title: 'SocialKM',
   description: 'Encuentra compañeros para correr en tu área',
   icons: {
     icon: '/favicon.ico',
